@@ -1,19 +1,20 @@
 server:
   port: 5004
+
 spring:
   application:
     name: location-service
+
   datasource:
     url: jdbc:mysql://localhost:3306/airline_location_db
     username: root
     password: sho1kat
     driver-class-name: com.mysql.cj.jdbc.Driver
 
-    jpa:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
       hibernate:
-        ddl-auto: update
-      show-sql: true
-      properties:
-        hibernate:
-          format_sql: true
-
+        format_sql: true
