@@ -13,6 +13,12 @@
 	<description>Airline location and airport management service</description>
 
 	<dependencies>
+
+		<dependency>
+			<groupId>com.sho1kat</groupId>
+			<artifactId>common-lib</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
