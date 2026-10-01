@@ -13,14 +13,15 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>service</artifactId>
+    <artifactId>services</artifactId>
     <packaging>pom</packaging>
 
     <name>Business Services</name>
     <description>Airline business microservices</description>
 
     <modules>
-        <module>user-services</module>
+<!--        <module>user-services</module>-->
+        <module>location-service</module>
     </modules>
 
 </project>
