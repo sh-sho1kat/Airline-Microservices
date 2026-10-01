@@ -1,7 +1,7 @@
 package com.sho1kat.location_service.controller;
 
 
-import com.sho1kat.payload.response.ApiResponse;
+import com.sho1kat.location_service.payload.response.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
