@@ -46,6 +46,11 @@ public class AirportMapper {
                 .timeZoneId(airport.getTimeZoneId())
                 .address(toAddressResponse(airport.getAddress()))
                 .geoCode(toGeoCodeResponse(airport.getGeoCode()))
+                .cityResponse(
+                        airport.getCity() != null
+                                ? CityMapper.toResponse(airport.getCity())
+                                : null
+                )
                 .build();
     }
 
