@@ -5,6 +5,8 @@ import com.sho1kat.entity.City;
 import com.sho1kat.mapper.AirportMapper;
 import com.sho1kat.payload.request.AirportRequest;
 import com.sho1kat.payload.response.AirportResponse;
+import com.sho1kat.repository.AirportRepository;
+import com.sho1kat.repository.CityRepository;
 import com.sho1kat.service.AirportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
