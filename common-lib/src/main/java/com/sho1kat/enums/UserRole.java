@@ -1,7 +1,7 @@
 package com.sho1kat.enums;
 
 public enum UserRole {
-    CUSTOMER("Customer who can search and book flights"),
+    USER("Customer who can search and book flights"),
     STAFF("Airline staff / operations"),
     ADMIN("System administrator");
 

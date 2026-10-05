@@ -24,7 +24,6 @@ public class UserDto {
     private LocalDate dateOfBirth;
     private Set<UserRole> userRoles;
     private UserStatus userStatus;
-    private boolean emailVerified;
     private Instant createdAt;
     private Instant updatedAt;
     private String password;
