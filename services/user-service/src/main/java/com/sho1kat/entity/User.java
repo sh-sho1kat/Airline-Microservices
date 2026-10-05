@@ -1,5 +1,6 @@
 package com.sho1kat.entity;
 
+import com.sho1kat.enums.Gender;
 import com.sho1kat.enums.UserRole;
 import com.sho1kat.enums.UserStatus;
 import jakarta.persistence.*;
@@ -38,11 +39,16 @@ public class User {
     @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
-    @Column(name = "phone_number", length = 30)
+    @Column(name = "phone_number", nullable = false, length = 30)
     private String phoneNumber;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", length = 30)
+    private Gender gender ;
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -68,7 +74,6 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @CreationTimestamp
     @Column(name = "last_login")
     private Instant lastLogin;
 

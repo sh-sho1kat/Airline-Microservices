@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,9 +33,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse signUp(UserDto userDto) {
 
-        User user = userRepository.findByEmail(userDto.getEmail());
+        User existingUser =
+                userRepository.findByEmail(userDto.getEmail());
 
-        if (user != null) {
+        if (existingUser != null) {
             return new AuthResponse(
                     null,
                     "User with email " + userDto.getEmail() + " already exists",
@@ -49,20 +49,25 @@ public class AuthServiceImpl implements AuthService {
         User newUser = User.builder()
                 .email(userDto.getEmail())
                 .emailVerified(false)
-                .passwordHash(passwordEncoder.encode(userDto.getPassword()))
+                .passwordHash(
+                        passwordEncoder.encode(userDto.getPassword())
+                )
                 .firstName(userDto.getFirstName())
                 .lastName(userDto.getLastName())
-                .roles(Set.of(UserRole.ADMIN))
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .lastLogin(Instant.now())
+                .roles(Set.of(UserRole.USER))
                 .build();
 
         User savedUser = userRepository.save(newUser);
 
         Collection<? extends GrantedAuthority> authorities =
-                savedUser.getRoles().stream()
-                        .map(role -> new SimpleGrantedAuthority(role.toString()))
+                savedUser.getRoles()
+                        .stream()
+                        .map(role ->
+                                new org.springframework.security.core.authority
+                                        .SimpleGrantedAuthority(
+                                        "ROLE_" + role.name()
+                                )
+                        )
                         .toList();
 
         Authentication authentication =
@@ -72,58 +77,85 @@ public class AuthServiceImpl implements AuthService {
                         authorities
                 );
 
-        String jwt = jwtProvider.generateToken(
-                authentication,
-                savedUser.getId()
-        );
+        String jwt =
+                jwtProvider.generateToken(
+                        authentication,
+                        savedUser.getId()
+                );
+
+        /*
+         * Signup also logs the user in because we return a JWT.
+         * Therefore, lastLogin can be updated here.
+         */
+        savedUser.setLastLogin(Instant.now());
+        userRepository.save(savedUser);
 
         AuthResponse authResponse = new AuthResponse();
+
         authResponse.setJwt(jwt);
+
         authResponse.setTitle(
                 "Welcome: " +
-                        savedUser.getFirstName() + " " +
+                        savedUser.getFirstName() +
+                        " " +
                         savedUser.getLastName()
         );
-        authResponse.setMessage("User registered successfully");
+
+        authResponse.setMessage(
+                "User registered successfully"
+        );
+
         authResponse.setStatus("Success");
-        authResponse.setUser(UserMapper.toDto(savedUser));
+
+        authResponse.setUser(
+                UserMapper.toDto(savedUser)
+        );
 
         return authResponse;
     }
 
     @Override
-    public AuthResponse logIn(String email, String password) {
+    public AuthResponse logIn(
+            String email,
+            String password
+    ) {
 
-        Authentication authentication = authenticate(email, password);
+        Authentication authentication =
+                authenticate(email, password);
 
-        User user = userRepository.findByEmail(email);
+        User user =
+                userRepository.findByEmail(email);
 
         user.setLastLogin(Instant.now());
         userRepository.save(user);
 
-        String jwt = jwtProvider.generateToken(
-                authentication,
-                user.getId()
-        );
+        String jwt =
+                jwtProvider.generateToken(
+                        authentication,
+                        user.getId()
+                );
 
         AuthResponse authResponse = new AuthResponse();
         authResponse.setJwt(jwt);
-        authResponse.setTitle(
-                "Welcome: " +
-                        user.getFirstName() + " " +
-                        user.getLastName()
-        );
+        authResponse.setTitle("Welcome: " + user.getFirstName() + " " + user.getLastName());
         authResponse.setMessage("User logged in successfully");
         authResponse.setStatus("Success");
-        authResponse.setUser(UserMapper.toDto(user));
+
+        authResponse.setUser(
+                UserMapper.toDto(user)
+        );
 
         return authResponse;
     }
 
-    private Authentication authenticate(String email, String password) {
+    private Authentication authenticate(
+            String email,
+            String password
+    ) {
 
         UserDetails userDetails =
-                customUserDetailsService.loadUserByUsername(email);
+                customUserDetailsService
+                        .loadUserByUsername(email);
 
         if (!passwordEncoder.matches(
                 password,

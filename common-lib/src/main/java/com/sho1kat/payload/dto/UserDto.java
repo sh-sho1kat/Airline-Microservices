@@ -22,6 +22,7 @@ public class UserDto {
     private String email;
     private String phoneNumber;
     private LocalDate dateOfBirth;
+    private String gender;
     private Set<UserRole> userRoles;
     private UserStatus userStatus;
     private Instant createdAt;

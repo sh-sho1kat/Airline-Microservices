@@ -1,6 +1,10 @@
 package com.sho1kat.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum UserRole {
+
     USER("Customer who can search and book flights"),
     STAFF("Airline staff / operations"),
     ADMIN("System administrator");
@@ -11,7 +15,4 @@ public enum UserRole {
         this.description = description;
     }
 
-    public String getDescription() {
-        return description;
-    }
 }
