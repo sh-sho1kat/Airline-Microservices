@@ -1,6 +1,5 @@
-package com.sho1kat.payload.auth.response;
+package com.sho1kat.payload.userservicedto.response;
 
-import com.sho1kat.payload.dto.UserDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,5 +13,5 @@ public class AuthResponse {
     private String message;
     private String title;
     private String status;
-    private UserDto user;
+    private UserResponse user;
 }

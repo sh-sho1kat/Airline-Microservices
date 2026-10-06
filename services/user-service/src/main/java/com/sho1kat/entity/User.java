@@ -24,8 +24,8 @@ import java.util.UUID;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -47,8 +47,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "gender", length = 30)
-    private Gender gender ;
-
+    private Gender gender;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -60,7 +59,10 @@ public class User {
     private boolean emailVerified = false;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @CollectionTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id")
+    )
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 30)
     @Builder.Default
@@ -77,4 +79,11 @@ public class User {
     @Column(name = "last_login")
     private Instant lastLogin;
 
+    @OneToOne(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY,
+            orphanRemoval = true
+    )
+    private StaffProfile staffProfile;
 }

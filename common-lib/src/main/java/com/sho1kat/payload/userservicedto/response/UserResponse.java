@@ -1,33 +1,45 @@
-package com.sho1kat.payload.dto;
+package com.sho1kat.payload.userservicedto.response;
 
+import com.sho1kat.enums.Gender;
 import com.sho1kat.enums.UserRole;
 import com.sho1kat.enums.UserStatus;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 
-@Data
-@AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
-public class UserDto {
-    private UUID id;
-    private String firstName;
-    private String lastName;
-    private String email;
-    private String phoneNumber;
-    private LocalDate dateOfBirth;
-    private String gender;
-    private Set<UserRole> userRoles;
-    private UserStatus userStatus;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private String password;
+public class UserResponse {
 
+    private UUID id;
+
+    private String email;
+
+    private String firstName;
+
+    private String lastName;
+
+    private String phoneNumber;
+
+    private LocalDate dateOfBirth;
+
+    private Gender gender;
+
+    private UserStatus status;
+
+    private boolean emailVerified;
+
+    private Set<UserRole> roles;
+
+    private Instant createdAt;
+
+    private Instant updatedAt;
+
+    private Instant lastLogin;
 }
