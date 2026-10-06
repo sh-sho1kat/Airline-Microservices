@@ -11,8 +11,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/v1/staff")
 @RequiredArgsConstructor
@@ -22,7 +20,7 @@ public class StaffController {
 
     @PostMapping("/{userId}/approve")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> approveStaff(@PathVariable UUID userId, Authentication authentication) {
+    public ResponseEntity<UserResponse> approveStaff(@PathVariable Long userId, Authentication authentication) {
         String adminEmail = authentication.getName();
 
         return ResponseEntity.ok(
@@ -35,7 +33,7 @@ public class StaffController {
 
     @PostMapping("/{userId}/reject")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<MessageResponse> rejectStaff(@PathVariable UUID userId, Authentication authentication, @Valid @RequestBody RejectStaffRequest request) {
+    public ResponseEntity<MessageResponse> rejectStaff(@PathVariable Long userId, Authentication authentication, @Valid @RequestBody RejectStaffRequest request) {
         String adminEmail = authentication.getName();
 
         return ResponseEntity.ok(

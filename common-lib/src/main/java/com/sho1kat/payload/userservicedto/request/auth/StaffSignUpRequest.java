@@ -35,24 +35,3 @@ public class StaffSignUpRequest {
     @NotNull(message = "Address is required")
     private Address address;
 }
-
-//{
-//        "user": {
-//        "email": "staff@gmail.com",
-//        "password": "Password@123",
-//        "firstName": "Shefat",
-//        "lastName": "Hossen",
-//        "phoneNumber": "+8801712345678",
-//        "dateOfBirth": "2000-05-15",
-//        "gender": "MALE"
-//        },
-//        "employeeId": "EMP-1001",
-//        "department": "Flight Operations",
-//        "jobTitle": "Flight Operations Officer",
-//        "address": {
-//        "addressLine": "Airport Road",
-//        "postalCode": "1215",
-//        "district": "Dhaka",
-//        "country": "Bangladesh"
-//        }
-//}

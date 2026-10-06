@@ -15,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +48,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse updateRole(
-            UUID userId,
+            Long userId,
             UpdateRoleRequest request
     ) {
 
@@ -93,7 +92,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse updateStatus(
-            UUID userId,
+            Long userId,
             UpdateStatusRequest request
     ) {
 
@@ -107,7 +106,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public MessageResponse deleteUser(UUID userId) {
+    public MessageResponse deleteUser(Long userId) {
 
         User user = getUserById(userId);
 
@@ -133,7 +132,7 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
-    private User getUserById(UUID userId) {
+    private User getUserById(Long userId) {
 
         return userRepository.findById(userId)
                 .orElseThrow(() ->

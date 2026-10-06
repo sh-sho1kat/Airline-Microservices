@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +26,7 @@ public class StaffServiceImpl implements StaffService {
 
     @Override
     public UserResponse approveStaff(
-            UUID userId,
+            Long userId,
             String adminEmail
     ) {
 
@@ -84,7 +83,7 @@ public class StaffServiceImpl implements StaffService {
 
     @Override
     public MessageResponse rejectStaff(
-            UUID userId,
+            Long userId,
             RejectStaffRequest request,
             String adminEmail
     ) {
@@ -144,7 +143,7 @@ public class StaffServiceImpl implements StaffService {
         );
     }
 
-    private User getUserById(UUID userId) {
+    private User getUserById(Long userId) {
 
         return userRepository.findById(userId)
                 .orElseThrow(() ->

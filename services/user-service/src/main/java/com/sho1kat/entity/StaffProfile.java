@@ -6,7 +6,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "staff_profiles")
@@ -18,8 +17,8 @@ import java.util.UUID;
 public class StaffProfile {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "employee_id", nullable = false, unique = true, length = 50)
     private String employeeId;
@@ -41,7 +40,7 @@ public class StaffProfile {
     private Instant approvedAt;
 
     @Column(name = "approved_by")
-    private UUID approvedBy;
+    private Long approvedBy;
 
     @Column(name = "rejection_reason", length = 500)
     private String rejectionReason;

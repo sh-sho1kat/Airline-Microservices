@@ -1,5 +1,6 @@
 package com.sho1kat.payload.dto;
 
+import com.sho1kat.enums.Gender;
 import com.sho1kat.enums.UserRole;
 import com.sho1kat.enums.UserStatus;
 import lombok.AllArgsConstructor;
@@ -10,20 +11,20 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
-import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class UserDto {
-    private UUID id;
+    private Long id;
     private String firstName;
     private String lastName;
     private String email;
     private String phoneNumber;
     private LocalDate dateOfBirth;
-    private String gender;
+    private Gender gender;
+    private Boolean emailVerified;
     private Set<UserRole> userRoles;
     private UserStatus userStatus;
     private Instant createdAt;

@@ -4,17 +4,15 @@ import com.sho1kat.payload.userservicedto.request.user.RejectStaffRequest;
 import com.sho1kat.payload.userservicedto.response.MessageResponse;
 import com.sho1kat.payload.userservicedto.response.UserResponse;
 
-import java.util.UUID;
-
 public interface StaffService {
 
     UserResponse approveStaff(
-            UUID userId,
+            Long userId,
             String adminEmail
     );
 
     MessageResponse rejectStaff(
-            UUID userId,
+            Long userId,
             RejectStaffRequest request,
             String adminEmail
     );

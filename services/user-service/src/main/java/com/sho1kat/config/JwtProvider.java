@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.UUID;
 
 @Service
 public class JwtProvider {
@@ -27,7 +26,7 @@ public class JwtProvider {
         );
     }
 
-    public String generateToken(Authentication authentication, UUID userId) {
+    public String generateToken(Authentication authentication, Long userId) {
 
         return Jwts.builder()
                 .subject(authentication.getName())

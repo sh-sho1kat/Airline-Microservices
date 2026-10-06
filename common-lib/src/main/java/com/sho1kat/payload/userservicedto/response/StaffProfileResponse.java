@@ -4,7 +4,6 @@ import com.sho1kat.payload.response.AddressResponse;
 import lombok.*;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -13,7 +12,7 @@ import java.util.UUID;
 @Builder
 public class StaffProfileResponse {
 
-    private UUID id;
+    private Long id;
 
     private UserResponse userResponse;
 
@@ -27,7 +26,7 @@ public class StaffProfileResponse {
 
     private Instant approvedAt;
 
-    private UUID approvedBy;
+    private Long approvedBy;
 
     private String rejectionReason;
 

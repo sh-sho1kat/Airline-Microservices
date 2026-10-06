@@ -13,7 +13,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -44,7 +43,7 @@ public class UserController {
 
     @PutMapping("/{userId}/roles")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> updateRole(@PathVariable UUID userId, @Valid @RequestBody UpdateRoleRequest request
+    public ResponseEntity<UserResponse> updateRole(@PathVariable Long userId, @Valid @RequestBody UpdateRoleRequest request
     ) {
         return ResponseEntity.ok(
                 userService.updateRole(userId, request)
@@ -53,7 +52,7 @@ public class UserController {
 
     @PutMapping("/{userId}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> updateStatus(@PathVariable UUID userId, @Valid @RequestBody UpdateStatusRequest request) {
+    public ResponseEntity<UserResponse> updateStatus(@PathVariable Long userId, @Valid @RequestBody UpdateStatusRequest request) {
         return ResponseEntity.ok(
                 userService.updateStatus(userId, request)
         );
@@ -61,7 +60,7 @@ public class UserController {
 
     @DeleteMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<MessageResponse> deleteUser(@PathVariable UUID userId) {
+    public ResponseEntity<MessageResponse> deleteUser(@PathVariable Long userId) {
         return ResponseEntity.ok(
                 userService.deleteUser(userId)
         );

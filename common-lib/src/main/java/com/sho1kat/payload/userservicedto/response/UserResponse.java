@@ -8,7 +8,6 @@ import lombok.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -17,7 +16,7 @@ import java.util.UUID;
 @Builder
 public class UserResponse {
 
-    private UUID id;
+    private Long id;
 
     private String email;
 
