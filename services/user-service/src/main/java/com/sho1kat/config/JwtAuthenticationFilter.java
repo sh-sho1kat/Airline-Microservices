@@ -29,8 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String authHeader =
-                request.getHeader("Authorization");
+        String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null ||
                 !authHeader.startsWith("Bearer ")) {
@@ -39,46 +38,68 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token =
-                authHeader.substring(7);
+        String token = authHeader.substring(7);
 
         try {
 
-            if (jwtProvider.isTokenValid(token)) {
+            if (!jwtProvider.isTokenValid(token)) {
+                SecurityContextHolder.clearContext();
 
-                String email =
-                        jwtProvider.extractEmail(token);
+                response.setStatus(
+                        HttpServletResponse.SC_UNAUTHORIZED
+                );
 
-                if (email != null &&
-                        SecurityContextHolder
-                                .getContext()
-                                .getAuthentication() == null) {
+                return;
+            }
 
-                    UserDetails userDetails =
-                            customUserDetailsService
-                                    .loadUserByUsername(email);
+            String email =
+                    jwtProvider.extractEmail(token);
 
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    userDetails,
-                                    null,
-                                    userDetails.getAuthorities()
-                            );
+            if (email == null || email.isBlank()) {
 
-                    authentication.setDetails(
-                            new WebAuthenticationDetailsSource()
-                                    .buildDetails(request)
-                    );
+                SecurityContextHolder.clearContext();
 
-                    SecurityContextHolder
-                            .getContext()
-                            .setAuthentication(authentication);
-                }
+                response.setStatus(
+                        HttpServletResponse.SC_UNAUTHORIZED
+                );
+
+                return;
+            }
+
+            if (SecurityContextHolder
+                    .getContext()
+                    .getAuthentication() == null) {
+
+                UserDetails userDetails =
+                        customUserDetailsService
+                                .loadUserByUsername(email);
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
+
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource()
+                                .buildDetails(request)
+                );
+
+                SecurityContextHolder
+                        .getContext()
+                        .setAuthentication(authentication);
             }
 
         } catch (Exception e) {
 
             SecurityContextHolder.clearContext();
+
+            response.setStatus(
+                    HttpServletResponse.SC_UNAUTHORIZED
+            );
+
+            return;
         }
 
         filterChain.doFilter(request, response);

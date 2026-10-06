@@ -37,18 +37,24 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
+                        // Public authentication endpoints
                         .requestMatchers(
-                                "/api/v1/auth/**"
+                                "/api/v1/auth/signup",
+                                "/api/v1/auth/register-staff",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/forgot-password",
+                                "/api/v1/auth/reset-password"
                         ).permitAll()
 
-//                        .requestMatchers(
-//                                "/api/v1/users/**"
-//                        ).hasRole("ADMIN")
-
+                        // Staff endpoints
                         .requestMatchers(
                                 "/api/v1/staff/**"
-                        ).hasAnyRole("STAFF", "ADMIN")
+                        ).hasAnyRole(
+                                "STAFF",
+                                "ADMIN"
+                        )
 
+                        // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
 
