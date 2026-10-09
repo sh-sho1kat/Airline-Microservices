@@ -20,8 +20,7 @@ import java.util.Collection;
 @RequiredArgsConstructor
 public class CustomUserDetailedService implements UserDetailsService {
 
-    private final UserRepository userRepository;
-    private final ApiException apiException;
+    private final UserRepository userRepository;git checkout
 
     @Override
     public UserDetails loadUserByUsername(String email)
