@@ -20,7 +20,7 @@ import java.util.Collection;
 @RequiredArgsConstructor
 public class CustomUserDetailedService implements UserDetailsService {
 
-    private final UserRepository userRepository;git checkout
+    private final UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email)
@@ -40,13 +40,13 @@ public class CustomUserDetailedService implements UserDetailsService {
 
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
-                null,
+                user.getPasswordHash(),
                 authorities
         );
     }
 
 
-    public static Collection<? extends GrantedAuthority> getAuthorities(User user) {
+    public Collection<? extends GrantedAuthority> getAuthorities(User user) {
         return user.getRoles()
                 .stream()
                 .map(role ->
@@ -57,7 +57,7 @@ public class CustomUserDetailedService implements UserDetailsService {
                 .toList();
     }
 
-    private void ensureCanAuthenticate(User user) {
+    public void ensureCanAuthenticate(User user) {
         switch (user.getStatus()) {
             case ACTIVE -> { }
             case PENDING_VERIFICATION -> throw ApiException.forbidden("Please verify your email before logging in");

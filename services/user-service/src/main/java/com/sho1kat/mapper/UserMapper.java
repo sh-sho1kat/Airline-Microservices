@@ -5,6 +5,8 @@ import com.sho1kat.payload.userservicedto.request.auth.UserSignUpRequest;
 import com.sho1kat.payload.userservicedto.request.user.UpdateUserRequest;
 import com.sho1kat.payload.userservicedto.response.UserResponse;
 
+import java.util.HashSet;
+
 public class UserMapper {
 
     private UserMapper() {
@@ -61,7 +63,7 @@ public class UserMapper {
                 .gender(user.getGender())
                 .status(user.getStatus())
                 .emailVerified(user.isEmailVerified())
-                .roles(user.getRoles())
+                .roles(new HashSet<>(user.getRoles()))
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .lastLogin(user.getLastLogin())

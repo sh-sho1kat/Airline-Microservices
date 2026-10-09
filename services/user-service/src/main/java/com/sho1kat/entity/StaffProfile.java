@@ -29,7 +29,7 @@ public class StaffProfile {
     @Column(name = "job_title", nullable = false, length = 100)
     private String jobTitle;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 

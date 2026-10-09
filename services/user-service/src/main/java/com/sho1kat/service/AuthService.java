@@ -18,14 +18,11 @@ public interface AuthService {
 
     MessageResponse logout(LogoutRequest request);
 
-    MessageResponse sendVerification(EmailRequest request);
+    MessageResponse resendVerification(EmailRequest request);
 
     MessageResponse forgotPassword(EmailRequest request);
 
     MessageResponse resetPassword(ResetPasswordRequest request);
 
-    MessageResponse changePassword(
-            String email,
-            ChangePasswordRequest request
-    );
+    MessageResponse changePassword(String email, ChangePasswordRequest request);
 }

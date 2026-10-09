@@ -3,19 +3,21 @@ package com.sho1kat.service.impl;
 import com.sho1kat.entity.StaffProfile;
 import com.sho1kat.entity.User;
 import com.sho1kat.enums.UserRole;
+import com.sho1kat.enums.UserStatus;
 import com.sho1kat.mapper.UserMapper;
 import com.sho1kat.payload.userservicedto.request.user.RejectStaffRequest;
 import com.sho1kat.payload.userservicedto.response.MessageResponse;
 import com.sho1kat.payload.userservicedto.response.UserResponse;
 import com.sho1kat.repository.UserRepository;
+import com.sho1kat.service.MailService;
 import com.sho1kat.service.StaffService;
-import jakarta.transaction.Transactional;
+import com.sho1kat.service.TokenService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -23,124 +25,63 @@ import java.util.Set;
 public class StaffServiceImpl implements StaffService {
 
     private final UserRepository userRepository;
+    private final TokenService tokenService;
+    private final MailService mailService;
 
     @Override
-    public UserResponse approveStaff(
-            Long userId,
-            String adminEmail
-    ) {
-
+    public UserResponse approveStaff(Long userId, String adminEmail) {
         User user = getUserById(userId);
+        StaffProfile profile = requirePendingProfile(user);
+        User admin = requireAdmin(adminEmail);
 
-        StaffProfile staffProfile =
-                user.getStaffProfile();
-
-        if (staffProfile == null) {
-            throw new IllegalStateException(
-                    "User does not have a staff profile"
-            );
+        if (!user.isEmailVerified()) {
+            throw new IllegalStateException("User has not verified their email");
+        }
+        if (user.getStatus() == UserStatus.PENDING_APPROVAL) {
+            user.setStatus(UserStatus.ACTIVE);
+        } else if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new IllegalStateException("Cannot approve a user with status " + user.getStatus());
         }
 
-        if (staffProfile.getApprovedAt() != null) {
-            throw new IllegalStateException(
-                    "Staff profile is already approved"
-            );
-        }
+        profile.setApprovedAt(Instant.now());
+        profile.setApprovedBy(admin.getId());
+        profile.setRejectionReason(null);
+        user.getRoles().add(UserRole.STAFF);
 
-        User admin = getUserByEmail(adminEmail);
+        mailService.sendStaffApprovedEmail(
+                user.getEmail(), user.getFirstName() + " " + user.getLastName());
 
-        /*
-         * Approve the staff application.
-         */
-        staffProfile.setApprovedAt(
-                Instant.now()
-        );
-
-        staffProfile.setApprovedBy(
-                admin.getId()
-        );
-
-        staffProfile.setRejectionReason(null);
-
-        /*
-         * Preserve existing roles and add STAFF.
-         *
-         * Example:
-         * [USER] -> [USER, STAFF]
-         */
-        Set<UserRole> roles =
-                new HashSet<>(user.getRoles());
-
-        roles.add(UserRole.STAFF);
-
-        user.setRoles(roles);
-
-        User savedUser =
-                userRepository.save(user);
-
-        return UserMapper.toResponse(savedUser);
+        return UserMapper.toResponse(user);
     }
 
     @Override
-    public MessageResponse rejectStaff(
-            Long userId,
-            RejectStaffRequest request,
-            String adminEmail
-    ) {
-
+    public MessageResponse rejectStaff(Long userId, RejectStaffRequest request, String adminEmail) {
         User user = getUserById(userId);
+        StaffProfile profile = requirePendingProfile(user);
+        User admin = requireAdmin(adminEmail);
 
-        StaffProfile staffProfile =
-                user.getStaffProfile();
-
-        if (staffProfile == null) {
-            throw new IllegalStateException(
-                    "User does not have a staff profile"
-            );
+        String reason = request.getRejectionReason();
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("A rejection reason is required");
         }
 
-        if (staffProfile.getApprovedAt() != null) {
-            throw new IllegalStateException(
-                    "Approved staff cannot be rejected"
-            );
+        profile.setRejectionReason(reason.trim());
+        profile.setApprovedAt(null);
+        profile.setApprovedBy(admin.getId()); // means "decided by" when approvedAt is null
+
+        user.getRoles().remove(UserRole.STAFF);
+        if (user.getRoles().isEmpty()) {
+            user.getRoles().add(UserRole.USER);
         }
 
-        /*
-         * Verify that the request is being handled by
-         * an existing admin.
-         */
-        getUserByEmail(adminEmail);
-
-        staffProfile.setRejectionReason(
-                request.getRejectionReason()
-        );
-
-        staffProfile.setApprovedAt(null);
-        staffProfile.setApprovedBy(null);
-
-        /*
-         * Make sure rejected staff does not have STAFF
-         * authority.
-         */
-        Set<UserRole> roles =
-                new HashSet<>(user.getRoles());
-
-        roles.remove(UserRole.STAFF);
-
-        /*
-         * Keep the normal USER role.
-         */
-        if (roles.isEmpty()) {
-            roles.add(UserRole.USER);
+        if (user.getStatus() == UserStatus.PENDING_APPROVAL) {
+            user.setStatus(UserStatus.REJECTED);
+            tokenService.revokeAllRefreshTokens(user);
         }
 
-        user.setRoles(roles);
+        mailService.sendStaffRejectedEmail(user.getEmail(), user.getFirstName(), reason.trim());
 
-        userRepository.save(user);
-
-        return new MessageResponse(
-                "Staff registration rejected successfully"
-        );
+        return new MessageResponse("Staff registration rejected successfully");
     }
 
     private User getUserById(Long userId) {
@@ -166,5 +107,27 @@ public class StaffServiceImpl implements StaffService {
         }
 
         return user;
+    }
+
+    private StaffProfile requirePendingProfile(User user) {
+        StaffProfile profile = user.getStaffProfile();
+        if (profile == null) {
+            throw new IllegalStateException("User does not have a staff profile");
+        }
+        if (profile.getApprovedAt() != null) {
+            throw new IllegalStateException("Staff profile is already approved");
+        }
+        if (profile.getRejectionReason() != null) {
+            throw new IllegalStateException("Staff profile was already rejected");
+        }
+        return profile;
+    }
+
+    private User requireAdmin(String email) {
+        User admin = getUserByEmail(email);
+        if (!admin.getRoles().contains(UserRole.ADMIN)) {
+            throw new AccessDeniedException("Admin role required");
+        }
+        return admin;
     }
 }

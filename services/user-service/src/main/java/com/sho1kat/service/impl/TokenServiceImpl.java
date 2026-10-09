@@ -8,13 +8,12 @@ import com.sho1kat.repository.RefreshTokenRepository;
 import com.sho1kat.repository.VerificationTokenRepository;
 import com.sho1kat.service.TokenService;
 import com.sho1kat.utils.TokenUtils;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -22,18 +21,19 @@ import static com.sho1kat.utils.TokenUtils.*;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TokenServiceImpl implements TokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final VerificationTokenRepository verificationTokenRepository;
 
-    @Value("${spring.jwt.refresh-token-expiration-days}")
+    @Value("${app.jwt.refresh-token-expiration-days}")
     private long refreshTokenExpirationDays;
 
-    @Value("${spring.tokens.email-verification-hours}")
+    @Value("${app.tokens.email-verification-hours}")
     private long emailVerificationHours;
 
-    @Value("${spring.tokens.password-reset-minutes}")
+    @Value("${app.tokens.password-reset-minutes}")
     private long passwordResetMinutes;
 
     @Override
@@ -56,7 +56,6 @@ public class TokenServiceImpl implements TokenService {
 
         return rawToken;
     }
-
     @Override
     public RefreshToken consumeRefreshToken(String rawToken) {
         if (rawToken == null || rawToken.isBlank()) {
@@ -78,8 +77,10 @@ public class TokenServiceImpl implements TokenService {
             throw invalidToken();
         }
 
-        refreshToken.setRevoked(true);
-        refreshTokenRepository.save(refreshToken);
+        if (refreshTokenRepository.revokeIfActive(refreshToken.getId()) != 1) {
+            throw invalidToken();
+        }
+
         return refreshToken;
     }
 
@@ -116,7 +117,11 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public String issueOneTimeToken(User user, TokenType type) {
         // Invalidate previous unused tokens of this type.
-        verificationTokenRepository.invalidateAll(user.getId(), type);
+        verificationTokenRepository.invalidateAll(
+                user.getId(),
+                type,
+                Instant.now()
+        );
 
         String rawToken = generateSecureToken();
 
@@ -145,7 +150,6 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    @Transactional
     public VerificationToken consumeOneTimeToken(String rawToken, TokenType type) {
         if (rawToken == null
                 || rawToken.isBlank()
@@ -156,28 +160,24 @@ public class TokenServiceImpl implements TokenService {
 
         String tokenHash = TokenUtils.hashToken(rawToken);
 
-        VerificationToken verificationToken =
-                verificationTokenRepository
-                        .findByTokenHashAndType(
-                                tokenHash,
-                                type
-                        )
-                        .orElseThrow(TokenUtils::invalidToken);
+        VerificationToken verificationToken = verificationTokenRepository
+                .findByTokenHashAndType(tokenHash, type)
+                .orElseThrow(TokenUtils::invalidToken);
 
         Instant now = Instant.now();
 
         if (verificationToken.getUsedAt() != null
                 || verificationToken.getExpiresAt() == null
-                || !verificationToken.getExpiresAt()
-                .isAfter(now)) {
+                || !verificationToken.getExpiresAt().isAfter(now)) {
 
             throw invalidToken();
         }
 
-        // Mark the token as consumed.
-        verificationToken.setUsedAt(now);
+        // Atomic: only one concurrent request can set usedAt from null.
+        if (verificationTokenRepository.markUsedIfActive(verificationToken.getId(), now) != 1) {
+            throw invalidToken();
+        }
 
-        return verificationTokenRepository
-                .save(verificationToken);
+        return verificationToken;
     }
 }

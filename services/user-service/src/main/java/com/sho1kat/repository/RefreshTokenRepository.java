@@ -4,6 +4,9 @@ import com.sho1kat.entity.RefreshToken;
 import com.sho1kat.entity.User;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,4 +18,8 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     Optional<RefreshToken> findByTokenHash(String tokenHash);
 
     List<RefreshToken> findAllByUserAndRevokedFalse(User user);
+
+    @Modifying(flushAutomatically = true)
+    @Query("update RefreshToken t set t.revoked = true where t.id = :id and t.revoked = false")
+    int revokeIfActive(@Param("id") Long id);
 }

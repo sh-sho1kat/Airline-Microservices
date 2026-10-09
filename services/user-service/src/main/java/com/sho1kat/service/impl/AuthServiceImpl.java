@@ -14,24 +14,22 @@ import com.sho1kat.mapper.UserMapper;
 import com.sho1kat.payload.userservicedto.request.auth.*;
 import com.sho1kat.payload.userservicedto.response.AuthResponse;
 import com.sho1kat.payload.userservicedto.response.MessageResponse;
-import com.sho1kat.repository.VerificationTokenRepository;
 import com.sho1kat.repository.UserRepository;
+import com.sho1kat.repository.VerificationTokenRepository;
 import com.sho1kat.service.AuthService;
 import com.sho1kat.service.MailService;
 import com.sho1kat.service.TokenService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -40,15 +38,13 @@ import java.util.Set;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final VerificationTokenRepository verificationTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
-    private final CustomUserDetailedService customUserDetailedService;
     private final MailService mailService;
     private final TokenService tokenService;
+    private final CustomUserDetailedService customUserDetailedService;
 
     @Override
-    @Transactional
     public AuthResponse signup(UserSignUpRequest request) {
 
         String email = normalizeEmail(request.getEmail());
@@ -78,25 +74,19 @@ public class AuthServiceImpl implements AuthService {
         );
 
         User savedUser = userRepository.save(newUser);
-
-        Authentication authentication = getNewAuthentication(savedUser);
-
-        String jwt = jwtProvider.generateToken(
-                authentication,
-                savedUser.getId()
+        String rawToken = tokenService.issueOneTimeToken(savedUser, TokenType.EMAIL_VERIFICATION);
+        mailService.sendVerificationEmail(
+                savedUser.getEmail(),
+                savedUser.getFirstName() + " " + savedUser.getLastName(),
+                rawToken
         );
-        String refreshToken = tokenService.issueRefreshToken(savedUser);
 
-        savedUser.setLastLogin(Instant.now());
-        userRepository.save(savedUser);
-
-        mailService.sendMail(email,"Welcome To Airline","Your Account has been created. Please Verify your email address.");
         return new AuthResponse(
-                jwt,
-                refreshToken,
-                "Bearer",
+                null,
+                null,
+                null,
                 "Welcome: " + savedUser.getFirstName() + " " + savedUser.getLastName(),
-                "User registered successfully",
+                "User registered successfully. Please verify your email before logging in.",
                 "Success",
                 UserMapper.toResponse(savedUser)
         );
@@ -157,13 +147,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public MessageResponse sendVerification(EmailRequest request) {
+    public MessageResponse resendVerification(EmailRequest request) {
         User user = userRepository.findByEmail(normalizeEmail(request.getEmail()));
-        if(user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+        if (user != null && user.getStatus() == UserStatus.PENDING_VERIFICATION) {
             String rawToken = tokenService.issueOneTimeToken(user, TokenType.EMAIL_VERIFICATION);
             mailService.sendVerificationEmail(user.getEmail(), user.getFirstName() + " " + user.getLastName(), rawToken);
         }
-
         return new MessageResponse("If the account exists and is unverified, a new verification email has been sent.");
     }
 
@@ -211,6 +200,14 @@ public class AuthServiceImpl implements AuthService {
         staffProfile.setUser(user);
 
         User savedUser = userRepository.save(user);
+        if (savedUser.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            String rawToken = tokenService.issueOneTimeToken(savedUser, TokenType.EMAIL_VERIFICATION);
+            mailService.sendVerificationEmail(
+                    savedUser.getEmail(),
+                    savedUser.getFirstName() + " " + savedUser.getLastName(),
+                    rawToken
+            );
+        }
 
         return new MessageResponse("Registration received. Verify your email; an administrator will then "
                 + "review your application.");
@@ -228,11 +225,6 @@ public class AuthServiceImpl implements AuthService {
                     "If the email exists, a password reset link has been sent."
             );
         }
-
-        verificationTokenRepository
-                .deleteByUser_IdAndUsedAtIsNull(
-                        user.getId()
-                );
 
         String rawToken = tokenService.issueOneTimeToken(user, TokenType.PASSWORD_RESET);
         mailService.sendPasswordResetEmail(email,user.getFirstName()+" "+user.getLastName(), rawToken);
@@ -257,25 +249,6 @@ public class AuthServiceImpl implements AuthService {
                 request.getToken(),
                 TokenType.PASSWORD_RESET
         );
-        Optional<VerificationToken> optionalToken =
-                verificationTokenRepository
-                        .findByTokenHashAndUsedAtIsNull(
-                                resetToken.getTokenHash()
-                        );
-
-        if (optionalToken.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Invalid or expired reset token"
-            );
-        }
-
-        if (resetToken.getExpiresAt()
-                .isBefore(Instant.now())) {
-
-            throw new IllegalArgumentException(
-                    "Invalid or expired reset token"
-            );
-        }
 
         User user = resetToken.getUser();
 
@@ -286,14 +259,6 @@ public class AuthServiceImpl implements AuthService {
         );
 
         userRepository.save(user);
-
-        /*
-         * Token cannot be used again.
-         */
-        resetToken.setUsedAt(
-                Instant.now()
-        );
-
         tokenService.revokeAllRefreshTokens(user);
 
         return new MessageResponse(
@@ -351,6 +316,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         userRepository.save(user);
+        tokenService.revokeAllRefreshTokens(user);
 
         return new MessageResponse(
                 "Password changed successfully"
@@ -358,27 +324,22 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private Authentication authenticate(String email, String password) {
-
-        UserDetails userDetails = customUserDetailedService.loadUserByUsername(email);
-
-        if (!passwordEncoder.matches(
+        User user = userRepository.findByEmail(email);
+        if (user == null || !passwordEncoder.matches(
                 password,
-                userDetails.getPassword()
+                user.getPasswordHash()
         )) {
             throw new IllegalArgumentException(
                     "Invalid email or password"
             );
         }
 
-        return new UsernamePasswordAuthenticationToken(
-                userDetails.getUsername(),
-                null,
-                userDetails.getAuthorities()
-        );
+        customUserDetailedService.ensureCanAuthenticate(user);
+        return getNewAuthentication(user);
     }
 
     private Authentication getNewAuthentication(User user) {
-        Collection<? extends GrantedAuthority> authorities = CustomUserDetailedService.getAuthorities(user);
+        Collection<? extends GrantedAuthority> authorities = customUserDetailedService.getAuthorities(user);
         return new UsernamePasswordAuthenticationToken(
                 user.getEmail(),
                 null,
@@ -392,5 +353,6 @@ public class AuthServiceImpl implements AuthService {
                 .trim()
                 .toLowerCase();
     }
+
 
 }

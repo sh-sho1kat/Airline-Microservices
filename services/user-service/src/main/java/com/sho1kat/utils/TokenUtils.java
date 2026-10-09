@@ -7,7 +7,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 
@@ -50,9 +50,9 @@ public final class TokenUtils {
         }
     }
 
-    public static boolean isExpired(LocalDateTime expiresAt) {
+    public static boolean isExpired(Instant expiresAt) {
         return expiresAt == null
-                || !expiresAt.isAfter(LocalDateTime.now());
+                || !expiresAt.isAfter(Instant.now());
     }
 
     public static Duration tokenLifetime(
@@ -60,13 +60,9 @@ public final class TokenUtils {
             long emailVerificationHours,
             long passwordResetMinutes
     ) {
-        return switch (type.name()) {
-            case "EMAIL_VERIFICATION" ->
-                    Duration.ofHours(emailVerificationHours);
-
-            case "PASSWORD_RESET" ->
-                    Duration.ofMinutes(passwordResetMinutes);
-
+        return switch (type) {
+            case EMAIL_VERIFICATION -> Duration.ofHours(emailVerificationHours);
+            case PASSWORD_RESET -> Duration.ofMinutes(passwordResetMinutes);
             default -> throw new IllegalArgumentException(
                     "Unsupported one-time token type: " + type
             );

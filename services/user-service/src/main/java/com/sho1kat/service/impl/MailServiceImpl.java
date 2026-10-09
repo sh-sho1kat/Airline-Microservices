@@ -1,7 +1,6 @@
 package com.sho1kat.service.impl;
 
 import com.sho1kat.service.MailService;
-import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -18,17 +17,17 @@ public class MailServiceImpl implements MailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${spring.app.frontend-url}")
+    @Value("${app.frontend-url}")
     private String frontendUrl;
 
-    @Value("${spring.app.mail-from}")
+    @Value("${app.mail-from}")
     private String mailFrom;
 
-    @Value("${spring.tokens.email-verification-hours}")
-    private final int emailVerificationHours;
+    @Value("${app.tokens.email-verification-hours}")
+    private long emailVerificationHours;
 
-    @Value("${spring.tokens.password-reset-minutes}")
-    private final int passwordResetMinutes;
+    @Value("${app.tokens.password-reset-minutes}")
+    private long passwordResetMinutes;
 
     @Override
     public void sendVerificationEmail(String to, String Name, String token) {
