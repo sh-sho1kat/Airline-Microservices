@@ -17,7 +17,29 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        use_sql_comments: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  app:
+    frontend-url: ${FRONTEND_URL:http://localhost:3000}
+    mail-from: ${MAIL_FROM:no-reply@airline.local}
 
   jwt:
     secret: ${JWT_SECRET}
-    expiration: ${JWT_EXPIRATION:86400000}
+    jwt-expiration: ${JWT_EXPIRATION:900000} # 15 minutes
+    refresh-token-expiration-days: ${REFRESH_TOKEN_EXPIRATION:7} # 7 days
+
+  tokens:
+    email-verification-hours: 24
+    password-reset-minutes: 30
+

@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +28,7 @@ public class AuthController {
     }
 
     @PostMapping("/register-staff")
-    public ResponseEntity<UserResponse> registerStaff(@Valid @RequestBody StaffSignUpRequest request) {
+    public ResponseEntity<MessageResponse> registerStaff(@Valid @RequestBody StaffSignUpRequest request) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(authService.registerStaff(request));
@@ -41,7 +42,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody EmailRequest request) {
         return ResponseEntity.ok(
                 authService.forgotPassword(request)
         );
@@ -54,7 +55,8 @@ public class AuthController {
         );
     }
 
-    @PostMapping("/change-password")
+    @PostMapping("/me/change-password")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<MessageResponse> changePassword(Authentication authentication, @Valid @RequestBody ChangePasswordRequest request) {
         String email = authentication.getName();
 

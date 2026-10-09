@@ -10,11 +10,17 @@ public interface AuthService {
 
     AuthResponse signup(UserSignUpRequest request);
 
-    UserResponse registerStaff(StaffSignUpRequest request);
+    MessageResponse registerStaff(StaffSignUpRequest request);
 
     AuthResponse login(LogInRequest request);
 
-    MessageResponse forgotPassword(ForgotPasswordRequest request);
+    AuthResponse refresh(RefreshTokenRequest request);
+
+    MessageResponse logout(LogoutRequest request);
+
+    MessageResponse sendVerification(EmailRequest request);
+
+    MessageResponse forgotPassword(EmailRequest request);
 
     MessageResponse resetPassword(ResetPasswordRequest request);
 

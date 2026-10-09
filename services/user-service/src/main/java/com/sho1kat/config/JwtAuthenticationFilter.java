@@ -1,6 +1,6 @@
 package com.sho1kat.config;
 
-import com.sho1kat.service.CustomUserDetailsService;
+import com.sho1kat.service.impl.CustomUserDetailedService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,7 +20,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
-    private final CustomUserDetailsService customUserDetailsService;
+    private final CustomUserDetailedService  customUserDetailedService;
 
     @Override
     protected void doFilterInternal(
@@ -70,9 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .getContext()
                     .getAuthentication() == null) {
 
-                UserDetails userDetails =
-                        customUserDetailsService
-                                .loadUserByUsername(email);
+                UserDetails userDetails =   customUserDetailedService.loadUserByUsername(email);
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
