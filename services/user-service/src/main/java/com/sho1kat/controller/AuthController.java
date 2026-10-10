@@ -41,6 +41,16 @@ public class AuthController {
         );
     }
 
+    @PostMapping("/verify-email")
+    public ResponseEntity<MessageResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        return ResponseEntity.ok(authService.verifyEmail(request));
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<MessageResponse> resendVerification(@Valid @RequestBody EmailRequest request) {
+        return ResponseEntity.ok(authService.resendVerification(request));
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody EmailRequest request) {
         return ResponseEntity.ok(
@@ -62,6 +72,22 @@ public class AuthController {
 
         return ResponseEntity.ok(
                 authService.changePassword(email, request)
+        );
+    }
+
+    @PostMapping("/me/logout")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<MessageResponse> logout(@Valid @RequestBody LogoutRequest request) {
+        return ResponseEntity.ok(
+                authService.logout(request)
+        );
+    }
+
+    @PostMapping("/refresh")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(
+                authService.refresh(request)
         );
     }
 }

@@ -51,15 +51,7 @@ public class AuthServiceImpl implements AuthService {
         User existingUser = userRepository.findByEmail(email);
 
         if (existingUser != null) {
-            return new AuthResponse(
-                    null,
-                    null,
-                    null,
-                    "User with email " + email + " already exists",
-                    "Error",
-                    "Failure",
-                    null
-            );
+            throw ApiException.conflict("User with email " + email + " already exists");
         }
 
         User newUser = UserMapper.toEntity(
@@ -321,6 +313,22 @@ public class AuthServiceImpl implements AuthService {
         return new MessageResponse(
                 "Password changed successfully"
         );
+    }
+    @Override
+    public MessageResponse verifyEmail(VerifyEmailRequest request) {
+        VerificationToken token = tokenService.consumeOneTimeToken(
+                request.getToken(), TokenType.EMAIL_VERIFICATION);
+
+        User user = token.getUser();
+        user.setEmailVerified(true);
+
+        if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            user.setStatus(user.getStaffProfile() != null
+                    ? UserStatus.PENDING_APPROVAL
+                    : UserStatus.ACTIVE);
+        }
+
+        return new MessageResponse("Email verified successfully");
     }
 
     private Authentication authenticate(String email, String password) {

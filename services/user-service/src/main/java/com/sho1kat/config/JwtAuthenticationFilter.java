@@ -31,75 +31,44 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null ||
-                !authHeader.startsWith("Bearer ")) {
-
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        String token = authHeader.substring(7);
-
-        try {
-
-            if (!jwtProvider.isTokenValid(token)) {
-                SecurityContextHolder.clearContext();
-
-                response.setStatus(
-                        HttpServletResponse.SC_UNAUTHORIZED
-                );
-
-                return;
-            }
-
-            String email =
-                    jwtProvider.extractEmail(token);
-
-            if (email == null || email.isBlank()) {
-
-                SecurityContextHolder.clearContext();
-
-                response.setStatus(
-                        HttpServletResponse.SC_UNAUTHORIZED
-                );
-
-                return;
-            }
-
-            if (SecurityContextHolder
-                    .getContext()
-                    .getAuthentication() == null) {
-
-                UserDetails userDetails =   customUserDetailedService.loadUserByUsername(email);
-
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-
-                authentication.setDetails(
-                        new WebAuthenticationDetailsSource()
-                                .buildDetails(request)
-                );
-
-                SecurityContextHolder
-                        .getContext()
-                        .setAuthentication(authentication);
-            }
-
-        } catch (Exception e) {
-
-            SecurityContextHolder.clearContext();
-
-            response.setStatus(
-                    HttpServletResponse.SC_UNAUTHORIZED
-            );
-
-            return;
+        if (authHeader != null
+                && authHeader.startsWith("Bearer ")
+                && SecurityContextHolder.getContext().getAuthentication() == null) {
+            authenticate(authHeader.substring(7), request);
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void authenticate(String token, HttpServletRequest request) {
+        try {
+            if (!jwtProvider.isTokenValid(token)) {
+                return;
+            }
+
+            String email = jwtProvider.extractEmail(token);
+            if (email == null || email.isBlank()) {
+                return;
+            }
+
+            UserDetails userDetails = customUserDetailedService.loadUserByUsername(email);
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+
+            authentication.setDetails(
+                    new WebAuthenticationDetailsSource().buildDetails(request)
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        } catch (Exception e) {
+            // Unknown, suspended, or unverified user: stay unauthenticated.
+            SecurityContextHolder.clearContext();
+        }
     }
 }

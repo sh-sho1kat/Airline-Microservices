@@ -25,4 +25,6 @@ public interface AuthService {
     MessageResponse resetPassword(ResetPasswordRequest request);
 
     MessageResponse changePassword(String email, ChangePasswordRequest request);
+
+    MessageResponse verifyEmail(VerifyEmailRequest request);
 }
