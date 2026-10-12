@@ -37,7 +37,7 @@ public class Aircraft {
     private Airline airline;
 
     /** Fleet code / tail number, globally unique, stored upper-case (e.g. "S2-AJA"). */
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false,unique = true, length = 20)
     private String code;
 
     @Column(nullable = false, length = 100)
