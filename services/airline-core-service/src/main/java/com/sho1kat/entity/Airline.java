@@ -8,11 +8,17 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
 @Entity
-@Table(name = "airlines")
+@Table(name = "airlines", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_airline_iata", columnNames = "iata_code"),
+        @UniqueConstraint(name = "uk_airline_icao", columnNames = "icao_code"),
+        @UniqueConstraint(name = "uk_airline_owner", columnNames = "owner_id")
+})
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor

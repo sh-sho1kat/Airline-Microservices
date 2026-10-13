@@ -16,19 +16,23 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
-@Getter
-@Setter
 @RequiredArgsConstructor
 public class AirlineServiceImpl implements AirlineService {
     private final AirlineRepository airlineRepository;
+
     @Override
+    @Transactional
     public AirlineResponse createAirline(AirlineRequest request, Long callerId) {
         String iataCode = request.getIataCode().trim();
         String icaoCode = request.getIcaoCode().trim();
+        if (airlineRepository.existsByOwnerId(request.getOwnerId())) {
+            throw new ApiException(HttpStatus.CONFLICT, "This owner already has an airline.");
+        }
         if (airlineRepository.existsByIataCodeIgnoreCase(iataCode)) {
             throw new ApiException(HttpStatus.CONFLICT, "An airline with this IATA code already exists.");
         }
@@ -41,6 +45,7 @@ public class AirlineServiceImpl implements AirlineService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AirlineResponse getAirlineByOwner(Long ownerId) {
         Airline airline = airlineRepository.findFirstByOwnerIdOrderByCreatedAtDesc(ownerId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "No airline found for the given owner ID." + ownerId));
@@ -48,6 +53,7 @@ public class AirlineServiceImpl implements AirlineService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AirlineResponse getAirlineById(Long id) {
         Airline airline = airlineRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "No airline found for the given ID." + id));
@@ -55,6 +61,7 @@ public class AirlineServiceImpl implements AirlineService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AirlineResponse getAirlineByIataCode(String code) {
         Airline airline = airlineRepository.findByIataCodeIgnoreCase(code)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "No airline found for the given IATA code." + code));
@@ -62,16 +69,19 @@ public class AirlineServiceImpl implements AirlineService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<AirlineResponse> getAllAirlines(Pageable pageable) {
         return airlineRepository.findAll(pageable).map(AirlineMapper::toResponse);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<AirlineResponse> getAllAirlinesByStatus(AirlineStatus status, Pageable pageable) {
         return airlineRepository.findByStatusOrderByNameAsc(status, pageable).map(AirlineMapper::toResponse);
     }
 
     @Override
+    @Transactional
     public AirlineResponse updateAirline(Long id, AirlineRequest request, Long callerId) {
         Airline airline = airlineRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "No airline found for the given ID." + id));
@@ -92,6 +102,7 @@ public class AirlineServiceImpl implements AirlineService {
     }
 
     @Override
+    @Transactional
     public void deleteAirline(Long id, Long ownerId) {
         Airline airline = airlineRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "No airline found for the given ID." + id));
@@ -99,6 +110,7 @@ public class AirlineServiceImpl implements AirlineService {
     }
 
     @Override
+    @Transactional
     public AirlineResponse changeStatusByAdmin(Long airlineId, AirlineStatus status, Long callerId) {
         Airline airline = airlineRepository.findById(airlineId)
               .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "No airline found for the given ID." + airlineId));
@@ -119,16 +131,11 @@ public class AirlineServiceImpl implements AirlineService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AirlineDropdownItem> getAirlineDropdown() {
         return airlineRepository.findByStatus(AirlineStatus.ACTIVE)
                 .stream()
-                .map(AirlineMapper::toResponse)
-                .map(airline -> AirlineDropdownItem.builder()
-                        .id(airline.getId())
-                        .iataCode(airline.getIataCode())
-                        .icaoCode(airline.getIcaoCode())
-                        .name(airline.getName())
-                        .build()
-                ).toList();
+                .map(AirlineMapper::toDropdownItem)
+                .toList();
     }
 }

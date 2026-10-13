@@ -62,24 +62,31 @@ public class AircraftServiceImpl implements AircraftService {
     @Transactional(readOnly = true)
     public Page<AircraftResponse> listAircraft(AircraftStatus status, Pageable pageable) {
         if (status == null) {
-            return null;
+            return aircraftRepository.findAll(pageable)
+                    .map(AircraftMapper::toResponse);
         }
-        return aircraftRepository.findByStatusOrderByCodeAsc(status, pageable)
+        return aircraftRepository.findByStatus(status, pageable)
                     .map(AircraftMapper::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AircraftResponse> listAircraftByAirline(Long airlineId, Pageable pageable) {
-        return aircraftRepository.findByAirline_Id(airlineId, pageable)
-                .map(AircraftMapper::toResponse);
+        Page<Aircraft> page = (airlineId == null)
+                ? aircraftRepository.findAll(pageable)
+                : aircraftRepository.findByAirline_Id(airlineId, pageable);
+        return page.map(AircraftMapper::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AircraftResponse> listAircraftByAirlineAndStatus(Long airlineId, AircraftStatus status, Pageable pageable) {
-        return aircraftRepository.findByAirline_IdAndStatus(airlineId, status, pageable)
-                .map(AircraftMapper::toResponse);
+        Page<Aircraft> page;
+        if (airlineId != null && status != null) page = aircraftRepository.findByAirline_IdAndStatus(airlineId, status, pageable);
+        else if (airlineId != null)              page = aircraftRepository.findByAirline_Id(airlineId, pageable);
+        else if (status != null)                 page = aircraftRepository.findByStatus(status, pageable);
+        else                                     page = aircraftRepository.findAll(pageable);
+        return page.map(AircraftMapper::toResponse);
     }
 
     @Override
@@ -89,7 +96,8 @@ public class AircraftServiceImpl implements AircraftService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Aircraft not found."));
         Airline airline = airlineRepository.findById(request.getAirlineId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Airline not found."));
-        if(airline.getStatus() != AirlineStatus.ACTIVE) {
+        boolean airlineChanged = !aircraft.getAirline().getId().equals(airline.getId());
+        if (airlineChanged && airline.getStatus() != AirlineStatus.ACTIVE) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Cannot assign aircraft to an inactive airline.");
         }
         if (aircraftRepository.existsByCodeIgnoreCaseAndIdNot(request.getCode().trim(), id)) {
@@ -105,7 +113,19 @@ public class AircraftServiceImpl implements AircraftService {
     public AircraftStatusResponse updateAircraftStatus(Long id, AircraftStatus status, Long callerId) {
         Aircraft aircraft = aircraftRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Aircraft not found."));
+        if (aircraft.getStatus() == status) {
+            throw new ApiException(HttpStatus.CONFLICT, "Aircraft is already " + status + ".");
+        }
+        if (aircraft.getStatus() == AircraftStatus.RETIRED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "A retired aircraft cannot change status.");
+        }
+        if (status == AircraftStatus.ACTIVE && aircraft.getAirline().getStatus() != AirlineStatus.ACTIVE) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Cannot activate an aircraft of a non-active airline.");
+        }
         aircraft.setStatus(status);
+        if (status != AircraftStatus.ACTIVE) {
+            aircraft.setIsAvailable(false);
+        }
         aircraft.setUpdatedById(callerId);
         Aircraft updatedAircraft = aircraftRepository.save(aircraft);
         return AircraftMapper.toStatusResponse(updatedAircraft);
@@ -116,6 +136,9 @@ public class AircraftServiceImpl implements AircraftService {
     public void deleteAircraft(Long id, Long callerId) {
         Aircraft aircraft = aircraftRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Aircraft not found."));
+        if (aircraftRepository.existsByAirline_Id(id)) {
+            throw new ApiException(HttpStatus.CONFLICT, "Cannot delete an airline that still has aircraft.");
+        }
         aircraft.setUpdatedById(callerId);
         aircraftRepository.deleteById(id);
     }

@@ -13,6 +13,6 @@ public interface AircraftRepository extends JpaRepository<Aircraft, Long> {
     boolean existsByCodeIgnoreCaseAndIdNot(String code, Long id);
     boolean existsByAirline_Id(Long airlineId);
     Page<Aircraft> findByAirline_Id(Long airlineId, Pageable pageable);
-    Page<Aircraft> findByStatusOrderByCodeAsc(AircraftStatus status, Pageable pageable);
+    Page<Aircraft> findByStatus(AircraftStatus status, Pageable pageable);
     Page<Aircraft> findByAirline_IdAndStatus(Long airlineId, AircraftStatus status, Pageable pageable);
 }

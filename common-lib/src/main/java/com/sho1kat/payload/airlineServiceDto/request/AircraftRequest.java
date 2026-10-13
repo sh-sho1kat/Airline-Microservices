@@ -15,11 +15,11 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class AircraftRequest {
     @NotBlank(message = "Aircraft code is required")
-    @Size(max = 30, message = "Aircraft code must not exceed 30 characters")
+    @Size(max = 20, message = "Aircraft code must not exceed 20 characters")
     private String code;
 
     @NotBlank(message = "Aircraft model is required")
-    @Size(max = 120, message = "Aircraft model must not exceed 120 characters")
+    @Size(max = 100, message = "Aircraft model must not exceed 100 characters")
     private String model;
 
     @NotBlank(message = "Manufacturer is required")
@@ -35,6 +35,7 @@ public class AircraftRequest {
     private Integer seatingCapacity;
 
     @PositiveOrZero(message = "Economy seats cannot be negative")
+    @Builder.Default
     private Integer economySeats = 0;
 
     @PositiveOrZero(message = "Premium economy seats cannot be negative")

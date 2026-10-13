@@ -31,7 +31,6 @@ public class AirlineResponse {
     private String alliance;
 
     private Long headquartersCityId;
-    /** Filled on single-airline reads only, the best effort (omitted if location-service is down). */
     private CityResponse headquartersCity;
 
     private Support support;
@@ -39,7 +38,6 @@ public class AirlineResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
-    // management view only
     private Long ownerId;
     private UserResponse owner;
     private Long updatedById;

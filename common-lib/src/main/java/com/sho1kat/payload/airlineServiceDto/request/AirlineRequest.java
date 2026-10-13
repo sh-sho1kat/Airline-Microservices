@@ -1,10 +1,7 @@
 package com.sho1kat.payload.airlineServiceDto.request;
 
 import com.sho1kat.enums.AirlineStatus;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,10 +23,10 @@ public class AirlineRequest {
     private String icaoCode;
 
     @NotBlank(message = "Airline name is mandatory")
-    @Size(max = 160, message = "Airline name must not exceed 160 characters")
+    @Size(max = 150, message = "Airline name must not exceed 150 characters")
     private String name;
 
-    @Size(max = 160, message = "Alias must not exceed 160 characters")
+    @Size(max = 100, message = "Alias must not exceed 100 characters")
     private String alias;
 
     @NotBlank(message = "Country is mandatory")
@@ -42,10 +39,11 @@ public class AirlineRequest {
     @Size(max = 2048, message = "Website URL must not exceed 2048 characters")
     private String website;
 
-    @Size(max = 100, message = "Alliance must not exceed 100 characters")
+    @Size(max = 50, message = "Alliance must not exceed 50 characters")
     private String alliance;
 
-    @NotBlank(message = "Owner ID is mandatory")
+    @NotNull(message = "Owner ID is mandatory")
+    @Positive(message = "Owner ID must be positive")
     private Long ownerId;
 
     private Long headquartersCityId;

@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface AirlineRepository extends JpaRepository<Airline, Long> {
     boolean existsByIataCodeIgnoreCase(String iataCode);
     boolean existsByIcaoCodeIgnoreCase(String icaoCode);
+    boolean existsByOwnerId(Long ownerId);
     Optional<Airline> findByIataCodeIgnoreCase(String iataCode);
     Optional<Airline> findFirstByOwnerIdOrderByCreatedAtDesc(Long ownerId);
     Page<Airline> findByStatusOrderByNameAsc(AirlineStatus status, Pageable pageable);
