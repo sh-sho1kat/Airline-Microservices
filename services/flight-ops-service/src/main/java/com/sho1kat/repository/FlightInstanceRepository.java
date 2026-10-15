@@ -41,4 +41,11 @@ public interface FlightInstanceRepository
             @Param("isActive") Boolean isActive,
             Pageable pageable
     );
+
+    boolean existsByScheduleIdAndDepartureDateTime(
+            Long scheduleId,
+            LocalDateTime departureDateTime
+    );
+
+    boolean existsByScheduleId(Long scheduleId);
 }
