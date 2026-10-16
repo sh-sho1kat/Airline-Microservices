@@ -1,8 +1,10 @@
 package com.sho1kat.entity;
 
-import com.sho1kat.enums.FlightStatus;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -14,16 +16,13 @@ import java.time.Instant;
 @Table(
         name = "flights",
         uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_airline_flight_number",
-                        columnNames = {"airline_id", "flight_number"}
-                )
+                @UniqueConstraint(name = "uk_flight_number", columnNames = "flight_number")
         },
         indexes = {
+                @Index(name = "idx_flight_airline", columnList = "airline_id"),
                 @Index(name = "idx_flight_aircraft", columnList = "aircraft_id"),
                 @Index(name = "idx_flight_departure", columnList = "departure_airport_id"),
-                @Index(name = "idx_flight_arrival", columnList = "arrival_airport_id"),
-                @Index(name = "idx_flight_status", columnList = "flight_status")
+                @Index(name = "idx_flight_arrival", columnList = "arrival_airport_id")
         }
 )
 @Getter
@@ -42,6 +41,7 @@ public class Flight {
     @Column(name = "airline_id", nullable = false)
     private Long airlineId;
 
+    // Default aircraft for new flight instances. Each instance stores its own aircraft.
     @Column(name = "aircraft_id", nullable = false)
     private Long aircraftId;
 
@@ -51,9 +51,12 @@ public class Flight {
     @Column(name = "arrival_airport_id", nullable = false)
     private Long arrivalAirportId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "flight_status", nullable = false, length = 20)
-    private FlightStatus flightStatus;
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "flight_status", nullable = false, length = 20)
+//    private FlightStatus flightStatus;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)

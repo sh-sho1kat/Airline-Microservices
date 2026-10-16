@@ -7,6 +7,8 @@ import com.sho1kat.payload.flightServiceDto.response.FlightScheduleResponse;
 import com.sho1kat.payload.response.AirportResponse;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
+
 @Component
 public class FlightScheduleMapper {
 
@@ -21,14 +23,12 @@ public class FlightScheduleMapper {
         FlightSchedule schedule = new FlightSchedule();
 
         schedule.setFlight(flight);
-        schedule.setDepartureAirportId(flight.getDepartureAirportId());
-        schedule.setArrivalAirportId(flight.getArrivalAirportId());
 
         schedule.setDepartureTime(request.getDepartureTime());
         schedule.setArrivalTime(request.getArrivalTime());
         schedule.setStartDate(request.getStartDate());
         schedule.setEndDate(request.getEndDate());
-        schedule.setOperatingDays(request.getOperatingDays());
+        schedule.setOperatingDays(new HashSet<>(request.getOperatingDays()));
 
         schedule.setIsActive(
                 request.getIsActive() != null
@@ -41,16 +41,11 @@ public class FlightScheduleMapper {
 
     public void updateEntity(
             FlightScheduleRequest request,
-            FlightSchedule existing,
-            Flight flight) {
+            FlightSchedule existing) {
 
-        if (request == null || existing == null || flight == null) {
+        if (request == null || existing == null) {
             return;
         }
-
-        existing.setFlight(flight);
-        existing.setDepartureAirportId(flight.getDepartureAirportId());
-        existing.setArrivalAirportId(flight.getArrivalAirportId());
 
         if (request.getDepartureTime() != null) {
             existing.setDepartureTime(request.getDepartureTime());
@@ -69,7 +64,8 @@ public class FlightScheduleMapper {
         }
 
         if (request.getOperatingDays() != null) {
-            existing.setOperatingDays(request.getOperatingDays());
+            existing.getOperatingDays().clear();
+            existing.getOperatingDays().addAll(request.getOperatingDays());
         }
 
         if (request.getIsActive() != null) {
@@ -100,7 +96,11 @@ public class FlightScheduleMapper {
                 .arrivalTime(schedule.getArrivalTime())
                 .startDate(schedule.getStartDate())
                 .endDate(schedule.getEndDate())
-                .operatingDays(schedule.getOperatingDays())
+                .operatingDays(
+                        schedule.getOperatingDays() == null
+                                ? java.util.List.of()
+                                : schedule.getOperatingDays().stream().sorted().toList()
+                )
                 .isActive(schedule.getIsActive())
                 .build();
     }

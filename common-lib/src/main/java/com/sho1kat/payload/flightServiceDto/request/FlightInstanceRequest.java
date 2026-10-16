@@ -22,15 +22,18 @@ public class FlightInstanceRequest {
     @Positive(message = "Schedule ID must be positive")
     private Long scheduleId;
 
+    @Positive(message = "Aircraft ID must be positive")
+    private Long aircraftId;
+
     @NotNull(message = "Departure date and time are required")
     private LocalDateTime departureDateTime;
 
     @NotNull(message = "Arrival date and time are required")
     private LocalDateTime arrivalDateTime;
 
-    @NotNull(message = "Total seats are required")
-    @Positive(message = "Total seats must be positive")
-    private Integer totalSeats;
+//    @NotNull(message = "Total seats are required")
+//    @Positive(message = "Total seats must be positive")
+//    private Integer totalSeats;
 
     @PositiveOrZero(message = "Minimum advance booking days cannot be negative")
     private Integer minAdvanceBookingDays;

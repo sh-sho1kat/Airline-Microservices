@@ -1,17 +1,12 @@
 package com.sho1kat.payload.flightServiceDto.request;
 
-import com.sho1kat.enums.FlightStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Getter
-@Setter
 @NoArgsConstructor
 @Data
 public class FlightRequest {
@@ -36,5 +31,5 @@ public class FlightRequest {
     @Positive(message = "Arrival airport ID must be positive")
     private Long arrivalAirportId;
 
-    private FlightStatus flightStatus = FlightStatus.SCHEDULED;
+//    private FlightStatus flightStatus = FlightStatus.SCHEDULED;
 }

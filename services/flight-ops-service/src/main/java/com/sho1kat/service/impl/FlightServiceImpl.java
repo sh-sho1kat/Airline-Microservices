@@ -1,15 +1,14 @@
 package com.sho1kat.service.impl;
 
 import com.sho1kat.entity.Flight;
-import com.sho1kat.enums.FlightStatus;
 import com.sho1kat.mapper.FlightMapper;
 import com.sho1kat.payload.flightServiceDto.request.FlightRequest;
 import com.sho1kat.payload.flightServiceDto.response.FlightResponse;
+import com.sho1kat.repository.FlightInstanceRepository;
 import com.sho1kat.repository.FlightRepository;
+import com.sho1kat.repository.FlightScheduleRepository;
 import com.sho1kat.service.FlightService;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -18,8 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -28,27 +26,26 @@ public class FlightServiceImpl implements FlightService {
 
     private final FlightRepository flightRepository;
     private final FlightMapper flightMapper;
+    private final FlightScheduleRepository scheduleRepository;
+    private final FlightInstanceRepository instanceRepository;
 
     @Override
     @Transactional
-    public FlightResponse createFlight(FlightRequest request) {
+    public FlightResponse createFlight(Long airlineId, FlightRequest request) {
+        validateId(airlineId, "Airline ID");
         validateCreateRequest(request);
 
-        String flightNumber = request.getFlightNumber().trim();
+        String flightNumber = normalizeFlightNumber(request.getFlightNumber());
 
-        if (flightRepository.existsByFlightNumberIgnoreCase(
-                flightNumber)) {
+        if (flightRepository.existsByFlightNumberIgnoreCase(flightNumber)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Flight number already exists: " + flightNumber
             );
         }
 
-        Flight flight = flightMapper.toEntity(request);
-        flight.setFlightNumber(flightNumber);
-
         return flightMapper.toResponse(
-                flightRepository.save(flight)
+                flightRepository.save(flightMapper.toEntity(request, airlineId))
         );
     }
 
@@ -73,18 +70,19 @@ public class FlightServiceImpl implements FlightService {
 
     @Override
     @Transactional
-    public FlightResponse updateFlight(String flightNumber, FlightRequest request) {
+    public FlightResponse updateFlight(Long airlineId, String flightNumber, FlightRequest request) {
 
-        Flight existing = findFlightByNumber(flightNumber);
+        validateId(airlineId, "Airline ID");
+
+        Flight existing = findOwnedFlight(airlineId, flightNumber);
 
         validateUpdateRequest(request, existing);
 
         if (request.getFlightNumber() != null) {
-            String newFlightNumber = request.getFlightNumber().trim();
+            String newFlightNumber = normalizeFlightNumber(request.getFlightNumber());
 
-            boolean duplicate = flightRepository.existsByFlightNumberIgnoreCaseAndIdNot(newFlightNumber, existing.getId());
-
-            if (duplicate) {
+            if (flightRepository.existsByFlightNumberIgnoreCaseAndIdNot(
+                    newFlightNumber, existing.getId())) {
                 throw new ResponseStatusException(
                         HttpStatus.CONFLICT,
                         "Flight number already exists: " + newFlightNumber
@@ -92,29 +90,44 @@ public class FlightServiceImpl implements FlightService {
             }
         }
 
-        flightMapper.updateEntity(request, existing);
+        Long newDeparture = request.getDepartureAirportId() != null
+                ? request.getDepartureAirportId()
+                : existing.getDepartureAirportId();
+        Long newArrival = request.getArrivalAirportId() != null
+                ? request.getArrivalAirportId()
+                : existing.getArrivalAirportId();
 
-        validateRoute(
-                existing.getDepartureAirportId(),
-                existing.getArrivalAirportId()
-        );
+        boolean routeChanged = !newDeparture.equals(existing.getDepartureAirportId())
+                || !newArrival.equals(existing.getArrivalAirportId());
+
+        if (routeChanged && hasSchedulesOrInstances(existing.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "The route cannot be changed because schedules or flight "
+                            + "instances already use this flight. Create a new flight."
+            );
+        }
+
+        flightMapper.updateEntity(request, existing);
 
         return flightMapper.toResponse(flightRepository.save(existing));
     }
 
     @Override
     @Transactional
-    public FlightResponse updateFlightStatus(String flightNumber, FlightStatus status) {
+    public FlightResponse updateFlightActiveStatus(Long airlineId, String flightNumber, Boolean isActive) {
 
-        if (status == null) {
+        validateId(airlineId, "Airline ID");
+
+        if (isActive == null) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Flight status is required"
+                    "Active status is required"
             );
         }
 
-        Flight flight = findFlightByNumber(flightNumber);
-        flight.setFlightStatus(status);
+        Flight flight = findOwnedFlight(airlineId, flightNumber);
+        flight.setIsActive(isActive);
 
         return flightMapper.toResponse(flightRepository.save(flight));
     }
@@ -125,20 +138,15 @@ public class FlightServiceImpl implements FlightService {
 
         validateId(airlineId, "Airline ID");
 
-        if (flightNumber == null || flightNumber.isBlank()) {
+        Flight flight = findOwnedFlight(airlineId, flightNumber);
+
+        if (hasSchedulesOrInstances(flight.getId())) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Flight number is required"
+                    HttpStatus.CONFLICT,
+                    "This flight has schedules or flight instances. "
+                            + "Deactivate it instead of deleting it."
             );
         }
-
-        Flight flight = flightRepository.findByAirlineIdAndFlightNumberIgnoreCase(airlineId, flightNumber.trim())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Flight not found for airline ID: "
-                                + airlineId + " and flight number: "
-                                + flightNumber
-                ));
 
         flightRepository.delete(flight);
     }
@@ -147,19 +155,12 @@ public class FlightServiceImpl implements FlightService {
     public Page<FlightResponse> searchFlights(
             Long departureAirportId,
             Long arrivalAirportId,
-            LocalDate departureDate,
             Pageable pageable) {
 
-        Specification<Flight> spec = buildSpecification(
-                departureAirportId,
-                arrivalAirportId,
-                departureDate,
-                null,
-                null,
-                null
-        );
-
-        return flightRepository.findAll(spec, pageable).map(flightMapper::toResponse);
+        return flightRepository.findAll(
+                buildSpecification(departureAirportId, arrivalAirportId, null, null),
+                pageable
+        ).map(flightMapper::toResponse);
     }
 
     @Override
@@ -171,17 +172,10 @@ public class FlightServiceImpl implements FlightService {
 
         validateId(airlineId, "Airline ID");
 
-        Specification<Flight> spec = buildSpecification(
-                departureAirportId,
-                arrivalAirportId,
-                null,
-                airlineId,
-                null,
-                null
-        );
-
-        return flightRepository.findAll(spec, pageable)
-                .map(flightMapper::toResponse);
+        return flightRepository.findAll(
+                buildSpecification(departureAirportId, arrivalAirportId, airlineId, null),
+                pageable
+        ).map(flightMapper::toResponse);
     }
 
     @Override
@@ -193,62 +187,57 @@ public class FlightServiceImpl implements FlightService {
 
         validateId(aircraftId, "Aircraft ID");
 
-        Specification<Flight> spec = buildSpecification(
-                departureAirportId,
-                arrivalAirportId,
-                null,
-                null,
-                aircraftId,
-                null
-        );
-
-        return flightRepository.findAll(spec, pageable).map(flightMapper::toResponse);
+        return flightRepository.findAll(
+                buildSpecification(departureAirportId, arrivalAirportId, null, aircraftId),
+                pageable
+        ).map(flightMapper::toResponse);
     }
 
-    @Override
-    public Page<FlightResponse> searchFlightsByDate(LocalDate departureDate, Pageable pageable) {
 
-        if (departureDate == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Departure date is required"
-            );
-        }
-
-        Specification<Flight> spec = buildSpecification(
-                null,
-                null,
-                departureDate,
-                null,
-                null,
-                null
-        );
-
-        return flightRepository.findAll(spec, pageable)
-                .map(flightMapper::toResponse);
-    }
-
-    @Override
-    public Page<FlightResponse> searchFlightsByStatus(FlightStatus status, Pageable pageable) {
-
-        if (status == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Flight status is required"
-            );
-        }
-
-        Specification<Flight> spec = buildSpecification(
-                null,
-                null,
-                null,
-                null,
-                null,
-                status
-        );
-
-        return flightRepository.findAll(spec, pageable).map(flightMapper::toResponse);
-    }
+//    @Override
+//    public Page<FlightResponse> searchFlightsByDate(LocalDate departureDate, Pageable pageable) {
+//
+//        if (departureDate == null) {
+//            throw new ResponseStatusException(
+//                    HttpStatus.BAD_REQUEST,
+//                    "Departure date is required"
+//            );
+//        }
+//
+//        Specification<Flight> spec = buildSpecification(
+//                null,
+//                null,
+//                departureDate,
+//                null,
+//                null,
+//                null
+//        );
+//
+//        return flightRepository.findAll(spec, pageable)
+//                .map(flightMapper::toResponse);
+//    }
+//
+//    @Override
+//    public Page<FlightResponse> searchFlightsByStatus(FlightStatus status, Pageable pageable) {
+//
+//        if (status == null) {
+//            throw new ResponseStatusException(
+//                    HttpStatus.BAD_REQUEST,
+//                    "Flight status is required"
+//            );
+//        }
+//
+//        Specification<Flight> spec = buildSpecification(
+//                null,
+//                null,
+//                null,
+//                null,
+//                null,
+//                status
+//        );
+//
+//        return flightRepository.findAll(spec, pageable).map(flightMapper::toResponse);
+//    }
 
     private Flight findFlightByNumber(String flightNumber) {
         if (flightNumber == null || flightNumber.isBlank()) {
@@ -282,7 +271,7 @@ public class FlightServiceImpl implements FlightService {
             );
         }
 
-        validateId(request.getAirlineId(), "Airline ID");
+//        validateId(request.getAirlineId(), "Airline ID");
         validateId(request.getAircraftId(), "Aircraft ID");
         validateId(
                 request.getDepartureAirportId(),
@@ -357,32 +346,35 @@ public class FlightServiceImpl implements FlightService {
         }
     }
 
-    private void validateSchedule(
-            LocalDateTime departureTime,
-            LocalDateTime arrivalTime) {
+    private Flight findOwnedFlight(Long airlineId, String flightNumber) {
+        Flight flight = findFlightByNumber(flightNumber);
 
-        if (departureTime == null || arrivalTime == null) {
+        if (!airlineId.equals(flight.getAirlineId())) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Departure and arrival times are required"
+                    HttpStatus.FORBIDDEN,
+                    "This flight does not belong to the specified airline"
             );
         }
 
-        if (!arrivalTime.isAfter(departureTime)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Arrival time must be after departure time"
-            );
-        }
+        return flight;
     }
+
+    private boolean hasSchedulesOrInstances(Long flightId) {
+        return scheduleRepository.existsByFlight_Id(flightId)
+                || instanceRepository.existsByFlight_Id(flightId);
+    }
+
+    private String normalizeFlightNumber(String flightNumber) {
+        return flightNumber.trim().toUpperCase(Locale.ROOT);
+    }
+
+//
 
     private Specification<Flight> buildSpecification(
             Long departureAirportId,
             Long arrivalAirportId,
-            LocalDate departureDate,
             Long airlineId,
-            Long aircraftId,
-            FlightStatus status) {
+            Long aircraftId) {
 
         Specification<Flight> spec =
                 (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
@@ -397,17 +389,6 @@ public class FlightServiceImpl implements FlightService {
                     criteriaBuilder.equal(root.get("arrivalAirportId"), arrivalAirportId));
         }
 
-        if (departureDate != null) {
-            LocalDateTime start = departureDate.atStartOfDay();
-            LocalDateTime end = departureDate.plusDays(1).atStartOfDay();
-
-            spec = spec.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.and(
-                            criteriaBuilder.greaterThanOrEqualTo(root.<LocalDateTime>get("departureTime"), start),
-                            criteriaBuilder.lessThan(root.<LocalDateTime>get("departureTime"), end)
-                    ));
-        }
-
         if (airlineId != null) {
             spec = spec.and((root, query, criteriaBuilder) ->
                     criteriaBuilder.equal(root.get("airlineId"), airlineId));
@@ -416,11 +397,6 @@ public class FlightServiceImpl implements FlightService {
         if (aircraftId != null) {
             spec = spec.and((root, query, criteriaBuilder) ->
                     criteriaBuilder.equal(root.get("aircraftId"), aircraftId));
-        }
-
-        if (status != null) {
-            spec = spec.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.equal(root.get("flightStatus"), status));
         }
 
         return spec;

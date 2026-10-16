@@ -18,6 +18,7 @@ public class FlightInstanceResponse {
     private Long id;
 
     private Long flightId;
+    private Long scheduleId;
     private String flightNumber;
 
     private Long airlineId;

@@ -1,7 +1,6 @@
 package com.sho1kat.mapper;
 
 import com.sho1kat.entity.Flight;
-import com.sho1kat.enums.FlightStatus;
 import com.sho1kat.payload.airlineServiceDto.response.AircraftResponse;
 import com.sho1kat.payload.airlineServiceDto.response.AirlineResponse;
 import com.sho1kat.payload.flightServiceDto.request.FlightRequest;
@@ -9,17 +8,18 @@ import com.sho1kat.payload.flightServiceDto.response.FlightResponse;
 import com.sho1kat.payload.response.AirportResponse;
 import org.springframework.stereotype.Component;
 
+import java.util.Locale;
+
 @Component
 public class FlightMapper {
 
-    public Flight toEntity(FlightRequest request) {
+    public Flight toEntity(FlightRequest request, Long airlineId) {
         Flight flight = new Flight();
 
-        updateEntity(request, flight);
+        flight.setAirlineId(airlineId);
+        flight.setIsActive(true);
 
-        if (flight.getFlightStatus() == null) {
-            flight.setFlightStatus(FlightStatus.SCHEDULED);
-        }
+        updateEntity(request, flight);
 
         return flight;
     }
@@ -31,12 +31,8 @@ public class FlightMapper {
 
         if (request.getFlightNumber() != null) {
             existing.setFlightNumber(
-                    request.getFlightNumber().trim()
+                    request.getFlightNumber().trim().toUpperCase(Locale.ROOT)
             );
-        }
-
-        if (request.getAirlineId() != null) {
-            existing.setAirlineId(request.getAirlineId());
         }
 
         if (request.getAircraftId() != null) {
@@ -55,9 +51,6 @@ public class FlightMapper {
             );
         }
 
-        if (request.getFlightStatus() != null) {
-            existing.setFlightStatus(request.getFlightStatus());
-        }
     }
 
     public FlightResponse toResponse(Flight flight) {
@@ -76,7 +69,7 @@ public class FlightMapper {
                 .arrivalAirport(
                         toResponseAirport(flight.getArrivalAirportId())
                 )
-                .status(flight.getFlightStatus())
+                .isActive(flight.getIsActive())
                 .createdAt(flight.getCreatedAt())
                 .updatedAt(flight.getUpdatedAt())
                 .build();

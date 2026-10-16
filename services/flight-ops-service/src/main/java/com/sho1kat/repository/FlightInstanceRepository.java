@@ -5,15 +5,18 @@ import com.sho1kat.enums.FlightStatus;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface FlightInstanceRepository
         extends JpaRepository<FlightInstance, Long> {
 
+    @EntityGraph(attributePaths = "flight")
     @Query("""
         SELECT fi
         FROM FlightInstance fi
@@ -42,10 +45,39 @@ public interface FlightInstanceRepository
             Pageable pageable
     );
 
-    boolean existsByScheduleIdAndDepartureDateTime(
-            Long scheduleId,
+    @Override
+    @EntityGraph(attributePaths = "flight")
+    Page<FlightInstance> findAll(Pageable pageable);
+
+    boolean existsByFlight_IdAndDepartureDateTime(
+            Long flightId,
             LocalDateTime departureDateTime
     );
 
-    boolean existsByScheduleId(Long scheduleId);
+    boolean existsBySchedule_Id(Long scheduleId);
+
+    boolean existsByFlight_Id(Long flightId);
+
+    List<FlightInstance> findBySchedule_IdAndDepartureDateTimeAfter(
+            Long scheduleId,
+            LocalDateTime after
+    );
+
+    // Pass -1L as excludeId when the instance is not stored yet.
+    @Query("""
+        SELECT CASE WHEN COUNT(fi) > 0 THEN true ELSE false END
+        FROM FlightInstance fi
+        WHERE fi.aircraftId = :aircraftId
+          AND fi.status <> :ignoredStatus
+          AND fi.id <> :excludeId
+          AND fi.departureDateTime < :windowEnd
+          AND fi.arrivalDateTime > :windowStart
+        """)
+    boolean existsAircraftConflict(
+            @Param("aircraftId") Long aircraftId,
+            @Param("ignoredStatus") FlightStatus ignoredStatus,
+            @Param("excludeId") Long excludeId,
+            @Param("windowStart") LocalDateTime windowStart,
+            @Param("windowEnd") LocalDateTime windowEnd
+    );
 }

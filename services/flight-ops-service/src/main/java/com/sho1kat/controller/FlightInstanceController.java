@@ -70,11 +70,13 @@ public class FlightInstanceController {
     // Update flight instance details
     @PutMapping("/{instanceId}")
     public ResponseEntity<FlightInstanceResponse> updateFlightInstance(
+            @RequestHeader("X-Airline-Id") Long airlineId,
             @PathVariable Long instanceId,
             @Valid @RequestBody FlightInstanceRequest request) {
 
         return ResponseEntity.ok(
                 flightInstanceService.updateFlightInstance(
+                        airlineId,
                         instanceId,
                         request
                 )
@@ -82,13 +84,14 @@ public class FlightInstanceController {
     }
 
     // Update operational status
-    @PatchMapping("/{instanceId}/status")
     public ResponseEntity<FlightInstanceResponse> updateStatus(
+            @RequestHeader("X-Airline-Id") Long airlineId,
             @PathVariable Long instanceId,
             @RequestParam FlightStatus status) {
 
         return ResponseEntity.ok(
                 flightInstanceService.updateFlightInstanceStatus(
+                        airlineId,
                         instanceId,
                         status
                 )
@@ -98,11 +101,13 @@ public class FlightInstanceController {
     // Activate or deactivate a flight instance
     @PatchMapping("/{instanceId}/active")
     public ResponseEntity<FlightInstanceResponse> updateActiveStatus(
+            @RequestHeader("X-Airline-Id") Long airlineId,
             @PathVariable Long instanceId,
             @RequestParam Boolean isActive) {
 
         return ResponseEntity.ok(
                 flightInstanceService.updateFlightInstanceActiveStatus(
+                        airlineId,
                         instanceId,
                         isActive
                 )
@@ -112,9 +117,10 @@ public class FlightInstanceController {
     // Delete a flight instance
     @DeleteMapping("/{instanceId}")
     public ResponseEntity<Void> deleteFlightInstance(
+            @RequestHeader("X-Airline-Id") Long airlineId,
             @PathVariable Long instanceId) {
 
-        flightInstanceService.deleteFlightInstance(instanceId);
+        flightInstanceService.deleteFlightInstance(airlineId, instanceId);
 
         return ResponseEntity.noContent().build();
     }

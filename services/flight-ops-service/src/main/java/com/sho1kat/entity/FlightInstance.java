@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Duration;
@@ -16,10 +16,17 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "flight_instances",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_instance_flight_departure",
+                        columnNames = {"flight_id", "departure_date_time"}
+                )
+        },
         indexes = {
                 @Index(name = "idx_instance_airline", columnList = "airline_id"),
                 @Index(name = "idx_instance_flight", columnList = "flight_id"),
                 @Index(name = "idx_instance_schedule", columnList = "schedule_id"),
+                @Index(name = "idx_instance_aircraft_departure", columnList = "aircraft_id, departure_date_time"),
                 @Index(name = "idx_instance_departure", columnList = "departure_date_time"),
                 @Index(name = "idx_instance_status", columnList = "status")
         }
@@ -41,14 +48,19 @@ public class FlightInstance {
     @JoinColumn(name = "flight_id", nullable = false)
     private Flight flight;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "schedule_id", nullable = false)
+    private FlightSchedule schedule;
+
+    // The aircraft (tail number) that flies THIS departure. Defaults to Flight.aircraftId on creation.
+    @Column(name = "aircraft_id", nullable = false)
+    private Long aircraftId;
+
     @Column(name = "departure_airport_id", nullable = false)
     private Long departureAirportId;
 
     @Column(name = "arrival_airport_id", nullable = false)
     private Long arrivalAirportId;
-
-    @Column(name = "schedule_id", nullable = false)
-    private Long scheduleId;
 
     @Column(name = "departure_date_time", nullable = false)
     private LocalDateTime departureDateTime;
@@ -58,6 +70,9 @@ public class FlightInstance {
 
     @Column(name = "total_seats", nullable = false)
     private Integer totalSeats;
+
+    @Version
+    private Long version;
 
     @Column(name = "available_seats", nullable = false)
     private Integer availableSeats;
@@ -80,10 +95,9 @@ public class FlightInstance {
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    @LastModifiedBy
+    @LastModifiedDate
     private Instant updatedAt;
 
-    @Transient
     public String getFormattedDuration() {
         if (departureDateTime == null || arrivalDateTime == null) {
             return null;

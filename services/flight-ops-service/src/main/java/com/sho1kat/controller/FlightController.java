@@ -29,9 +29,11 @@ public class FlightController {
 
     // Create a flight
     @PostMapping
-    public ResponseEntity<FlightResponse> createFlight(@Valid @RequestBody FlightRequest request) {
+    public ResponseEntity<FlightResponse> createFlight(
+            @RequestHeader("X-Airline-Id") Long airlineId,
+            @Valid @RequestBody FlightRequest request) {
 
-        FlightResponse response = flightService.createFlight(request);
+        FlightResponse response = flightService.createFlight(airlineId, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -57,22 +59,30 @@ public class FlightController {
 
     // Update a flight by flight number
     @PutMapping("/{flightNumber}")
-    public ResponseEntity<FlightResponse> updateFlight(@PathVariable String flightNumber, @Valid @RequestBody FlightRequest request) {
+    public ResponseEntity<FlightResponse> updateFlight(
+            @RequestHeader("X-Airline-Id") Long airlineId,
+            @PathVariable String flightNumber,
+            @Valid @RequestBody FlightRequest request) {
 
-        return ResponseEntity.ok(flightService.updateFlight(flightNumber, request));
+        return ResponseEntity.ok(flightService.updateFlight(airlineId, flightNumber, request));
     }
 
-    // Update flight status
-    // Example: PATCH /api/v1/flights/BS101/status?status=DELAYED
-    @PatchMapping("/{flightNumber}/status")
-    public ResponseEntity<FlightResponse> updateFlightStatus(@PathVariable String flightNumber, @RequestParam FlightStatus status) {
+    // Retire or re-enable a flight template
+    // Example: PATCH /api/v1/flights/BS101/active?isActive=false
+    @PatchMapping("/{flightNumber}/active")
+    public ResponseEntity<FlightResponse> updateFlightActiveStatus(
+            @RequestHeader("X-Airline-Id") Long airlineId,
+            @PathVariable String flightNumber,
+            @RequestParam Boolean isActive) {
 
-        return ResponseEntity.ok(flightService.updateFlightStatus(flightNumber, status));
+        return ResponseEntity.ok(flightService.updateFlightActiveStatus(airlineId, flightNumber, isActive));
     }
 
-    // Delete a flight belonging to a specific airline
+    // Delete a flight belonging to the calling airline
     @DeleteMapping("/airlines/{flightNumber}")
-    public ResponseEntity<MessageResponse> deleteFlight(@RequestHeader("airlineId") Long airlineId, @PathVariable String flightNumber) {
+    public ResponseEntity<MessageResponse> deleteFlight(
+            @RequestHeader("X-Airline-Id") Long airlineId,
+            @PathVariable String flightNumber) {
 
         flightService.deleteFlight(airlineId, flightNumber);
 
@@ -84,14 +94,12 @@ public class FlightController {
     public ResponseEntity<Page<FlightResponse>> searchFlights(
             @RequestParam(required = false) Long departureAirportId,
             @RequestParam(required = false) Long arrivalAirportId,
-            @RequestParam(required = false) LocalDate departureDate,
             @PageableDefault(size = 20) Pageable pageable) {
 
         return ResponseEntity.ok(
                 flightService.searchFlights(
                         departureAirportId,
                         arrivalAirportId,
-                        departureDate,
                         pageable
                 )
         );
@@ -133,22 +141,23 @@ public class FlightController {
         );
     }
 
-    // Search flights by departure date
-    @GetMapping("/search/date")
-    public ResponseEntity<Page<FlightResponse>> searchFlightsByDate(
-            @RequestParam LocalDate departureDate,
-            @PageableDefault(size = 20) Pageable pageable) {
+//    // Search flights by departure date
+//    @GetMapping("/search/date")
+//    public ResponseEntity<Page<FlightResponse>> searchFlightsByDate(
+//            @RequestParam LocalDate departureDate,
+//            @PageableDefault(size = 20) Pageable pageable) {
+//
+//        return ResponseEntity.ok(flightService.searchFlightsByDate(departureDate, pageable)
+//        );
+//    }
+//
+//    // Search flights by status
+//    @GetMapping("/search/status")
+//    public ResponseEntity<Page<FlightResponse>> searchFlightsByStatus(
+//            @RequestParam FlightStatus status,
+//            @PageableDefault(size = 20) Pageable pageable) {
+//
+//        return ResponseEntity.ok(flightService.searchFlightsByStatus(status, pageable));
+//    }
 
-        return ResponseEntity.ok(flightService.searchFlightsByDate(departureDate, pageable)
-        );
-    }
-
-    // Search flights by status
-    @GetMapping("/search/status")
-    public ResponseEntity<Page<FlightResponse>> searchFlightsByStatus(
-            @RequestParam FlightStatus status,
-            @PageableDefault(size = 20) Pageable pageable) {
-
-        return ResponseEntity.ok(flightService.searchFlightsByStatus(status, pageable));
-    }
 }

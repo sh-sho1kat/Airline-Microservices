@@ -4,12 +4,14 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(
@@ -32,12 +34,6 @@ public class FlightSchedule {
     @JoinColumn(name = "flight_id", nullable = false)
     private Flight flight;
 
-    @Column(name = "departure_airport_id", nullable = false)
-    private Long departureAirportId;
-
-    @Column(name = "arrival_airport_id", nullable = false)
-    private Long arrivalAirportId;
-
     @Column(name = "departure_time", nullable = false)
     private LocalTime departureTime;
 
@@ -51,13 +47,14 @@ public class FlightSchedule {
     private LocalDate endDate;
 
     @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SUBSELECT)
     @CollectionTable(
             name = "flight_schedule_operating_days",
             joinColumns = @JoinColumn(name = "flight_schedule_id")
     )
     @Enumerated(EnumType.STRING)
     @Column(name = "operating_day", nullable = false)
-    private List<DayOfWeek> operatingDays = new ArrayList<>();
+    private Set<DayOfWeek> operatingDays = new HashSet<>();
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;

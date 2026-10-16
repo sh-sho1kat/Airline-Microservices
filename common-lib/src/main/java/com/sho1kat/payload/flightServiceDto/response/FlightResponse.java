@@ -31,15 +31,17 @@ public class FlightResponse {
 
     private AirportResponse arrivalAirport;
 
-    private LocalDateTime departureTime;
+//    private LocalDateTime departureTime;
+//
+//    private LocalDateTime arrivalTime;
+//
+//    private FlightStatus status;
+//
+//    private BigDecimal lowestPrice;
+//
+//    private Integer totalAvailableSeats;
 
-    private LocalDateTime arrivalTime;
-
-    private FlightStatus status;
-
-    private BigDecimal lowestPrice;
-
-    private Integer totalAvailableSeats;
+    private Boolean isActive;
 
     private Instant createdAt;
 

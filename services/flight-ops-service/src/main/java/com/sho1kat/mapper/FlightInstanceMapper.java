@@ -2,6 +2,7 @@ package com.sho1kat.mapper;
 
 import com.sho1kat.entity.Flight;
 import com.sho1kat.entity.FlightInstance;
+import com.sho1kat.entity.FlightSchedule;
 import com.sho1kat.enums.FlightStatus;
 
 import com.sho1kat.payload.airlineServiceDto.response.AircraftResponse;
@@ -17,15 +18,18 @@ public class FlightInstanceMapper {
 
     public FlightInstance toEntity(
             FlightInstanceRequest request,
-            Flight flight) {
+            Flight flight,
+            FlightSchedule schedule,
+            Long aircraftId) {
 
         FlightInstance instance = new FlightInstance();
 
         instance.setFlight(flight);
+        instance.setSchedule(schedule);
+        instance.setAircraftId(aircraftId);
         instance.setAirlineId(flight.getAirlineId());
         instance.setDepartureAirportId(flight.getDepartureAirportId());
         instance.setArrivalAirportId(flight.getArrivalAirportId());
-        instance.setScheduleId(request.getScheduleId());
         instance.setDepartureDateTime(request.getDepartureDateTime());
         instance.setArrivalDateTime(request.getArrivalDateTime());
         instance.setStatus(FlightStatus.SCHEDULED);
@@ -38,64 +42,33 @@ public class FlightInstanceMapper {
 
     public void updateEntity(
             FlightInstanceRequest request,
-            FlightInstance existing,
-            Flight flight) {
+            FlightInstance existing) {
 
-        if (request == null || existing == null || flight == null) {
+        if (request == null || existing == null) {
             return;
         }
 
-        existing.setFlight(flight);
-        existing.setAirlineId(flight.getAirlineId());
-
-//        if (request.getDepartureAirportId() != null) {
-//            existing.setDepartureAirportId(
-//                    request.getDepartureAirportId()
-//            );
-//        }
-//
-//        if (request.getArrivalAirportId() != null) {
-//            existing.setArrivalAirportId(
-//                    request.getArrivalAirportId()
-//            );
-//        }
-//        if (request.getStatus() != null) {
-//            existing.setStatus(request.getStatus());
-//        }
-
-        if (request.getScheduleId() != null) {
-            existing.setScheduleId(request.getScheduleId());
-        }
-
         if (request.getDepartureDateTime() != null) {
-            existing.setDepartureDateTime(
-                    request.getDepartureDateTime()
-            );
+            existing.setDepartureDateTime(request.getDepartureDateTime());
         }
 
         if (request.getArrivalDateTime() != null) {
-            existing.setArrivalDateTime(
-                    request.getArrivalDateTime()
-            );
+            existing.setArrivalDateTime(request.getArrivalDateTime());
         }
 
         if (request.getMinAdvanceBookingDays() != null) {
-            existing.setMinAdvanceBookingDays(
-                    request.getMinAdvanceBookingDays()
-            );
+            existing.setMinAdvanceBookingDays(request.getMinAdvanceBookingDays());
         }
 
         if (request.getMaxAdvanceBookingDays() != null) {
-            existing.setMaxAdvanceBookingDays(
-                    request.getMaxAdvanceBookingDays()
-            );
+            existing.setMaxAdvanceBookingDays(request.getMaxAdvanceBookingDays());
         }
 
         if (request.getIsActive() != null) {
             existing.setIsActive(request.getIsActive());
         }
 
-        // Do not update availableSeats from the request.
+        // Flight, schedule and aircraft are changed by the service, never by the mapper.
         // Seat inventory belongs to booking operations.
     }
 
@@ -115,6 +88,7 @@ public class FlightInstanceMapper {
         return FlightInstanceResponse.builder()
                 .id(fi.getId())
                 .flightId(flight != null ? flight.getId() : null)
+                .scheduleId(fi.getSchedule() != null ? fi.getSchedule().getId() : null)
                 .flightNumber(
                         flight != null ? flight.getFlightNumber() : null
                 )
@@ -125,9 +99,7 @@ public class FlightInstanceMapper {
                 .airlineLogo(
                         airline != null ? airline.getLogoUrl() : null
                 )
-                .aircraftId(
-                        flight != null ? flight.getAircraftId() : null
-                )
+                .aircraftId(fi.getAircraftId())
                 .aircraftModel(
                         aircraft != null ? aircraft.getModel() : null
                 )

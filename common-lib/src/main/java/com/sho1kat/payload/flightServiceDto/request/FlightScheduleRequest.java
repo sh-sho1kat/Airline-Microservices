@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
+import java.util.Set;
 
 @Data
 @Builder
@@ -36,7 +36,8 @@ public class FlightScheduleRequest {
     private LocalDate endDate;
 
     @NotEmpty(message = "At least one operating day is required")
-    private List<DayOfWeek> operatingDays;
+    private Set<DayOfWeek> operatingDays;
 
+    @Builder.Default
     private Boolean isActive = true;
 }
