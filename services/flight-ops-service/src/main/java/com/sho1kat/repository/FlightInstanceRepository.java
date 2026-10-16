@@ -13,8 +13,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface FlightInstanceRepository
-        extends JpaRepository<FlightInstance, Long> {
+public interface FlightInstanceRepository extends JpaRepository<FlightInstance, Long> {
 
     @EntityGraph(attributePaths = "flight")
     @Query("""

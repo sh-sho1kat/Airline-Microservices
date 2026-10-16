@@ -31,5 +31,4 @@ public class FlightRequest {
     @Positive(message = "Arrival airport ID must be positive")
     private Long arrivalAirportId;
 
-//    private FlightStatus flightStatus = FlightStatus.SCHEDULED;
 }

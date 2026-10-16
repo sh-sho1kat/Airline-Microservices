@@ -31,10 +31,6 @@ public class FlightInstanceRequest {
     @NotNull(message = "Arrival date and time are required")
     private LocalDateTime arrivalDateTime;
 
-//    @NotNull(message = "Total seats are required")
-//    @Positive(message = "Total seats must be positive")
-//    private Integer totalSeats;
-
     @PositiveOrZero(message = "Minimum advance booking days cannot be negative")
     private Integer minAdvanceBookingDays;
 

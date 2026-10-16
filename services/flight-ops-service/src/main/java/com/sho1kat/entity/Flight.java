@@ -51,10 +51,6 @@ public class Flight {
     @Column(name = "arrival_airport_id", nullable = false)
     private Long arrivalAirportId;
 
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "flight_status", nullable = false, length = 20)
-//    private FlightStatus flightStatus;
-
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 

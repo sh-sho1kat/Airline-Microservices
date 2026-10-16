@@ -1,24 +1,19 @@
 
 package com.sho1kat.controller;
 
-import com.sho1kat.enums.FlightStatus;
 import com.sho1kat.payload.flightServiceDto.request.FlightRequest;
 import com.sho1kat.payload.flightServiceDto.response.FlightResponse;
 import com.sho1kat.payload.userservicedto.response.MessageResponse;
 import com.sho1kat.service.FlightService;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1/flights")
@@ -140,24 +135,5 @@ public class FlightController {
                 )
         );
     }
-
-//    // Search flights by departure date
-//    @GetMapping("/search/date")
-//    public ResponseEntity<Page<FlightResponse>> searchFlightsByDate(
-//            @RequestParam LocalDate departureDate,
-//            @PageableDefault(size = 20) Pageable pageable) {
-//
-//        return ResponseEntity.ok(flightService.searchFlightsByDate(departureDate, pageable)
-//        );
-//    }
-//
-//    // Search flights by status
-//    @GetMapping("/search/status")
-//    public ResponseEntity<Page<FlightResponse>> searchFlightsByStatus(
-//            @RequestParam FlightStatus status,
-//            @PageableDefault(size = 20) Pageable pageable) {
-//
-//        return ResponseEntity.ok(flightService.searchFlightsByStatus(status, pageable));
-//    }
 
 }
