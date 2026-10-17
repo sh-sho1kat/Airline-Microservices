@@ -38,14 +38,4 @@ public interface FlightService {
             Long arrivalAirportId,
             Pageable pageable
     );
-
-//    Page<FlightResponse> searchFlightsByDate(
-//            LocalDate departureDate,
-//            Pageable pageable
-//    );
-//
-//    Page<FlightResponse> searchFlightsByStatus(
-//            FlightStatus status,
-//            Pageable pageable
-//    );
 }

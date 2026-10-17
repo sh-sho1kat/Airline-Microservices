@@ -193,52 +193,6 @@ public class FlightServiceImpl implements FlightService {
         ).map(flightMapper::toResponse);
     }
 
-
-//    @Override
-//    public Page<FlightResponse> searchFlightsByDate(LocalDate departureDate, Pageable pageable) {
-//
-//        if (departureDate == null) {
-//            throw new ResponseStatusException(
-//                    HttpStatus.BAD_REQUEST,
-//                    "Departure date is required"
-//            );
-//        }
-//
-//        Specification<Flight> spec = buildSpecification(
-//                null,
-//                null,
-//                departureDate,
-//                null,
-//                null,
-//                null
-//        );
-//
-//        return flightRepository.findAll(spec, pageable)
-//                .map(flightMapper::toResponse);
-//    }
-//
-//    @Override
-//    public Page<FlightResponse> searchFlightsByStatus(FlightStatus status, Pageable pageable) {
-//
-//        if (status == null) {
-//            throw new ResponseStatusException(
-//                    HttpStatus.BAD_REQUEST,
-//                    "Flight status is required"
-//            );
-//        }
-//
-//        Specification<Flight> spec = buildSpecification(
-//                null,
-//                null,
-//                null,
-//                null,
-//                null,
-//                status
-//        );
-//
-//        return flightRepository.findAll(spec, pageable).map(flightMapper::toResponse);
-//    }
-
     private Flight findFlightByNumber(String flightNumber) {
         if (flightNumber == null || flightNumber.isBlank()) {
             throw new ResponseStatusException(
