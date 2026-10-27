@@ -63,6 +63,8 @@
                         <source>${java.version}</source>
                         <target>${java.version}</target>
                         <parameters>true</parameters>
+                        <!-- JDK 23+ disables implicit annotation processing; keep Lombok running. -->
+                        <proc>full</proc>
                     </configuration>
                 </plugin>
 
